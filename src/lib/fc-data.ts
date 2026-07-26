@@ -131,11 +131,15 @@ function getSnapshot() {
 }
 
 export function useFcState<T>(selector: (s: State) => T): T {
-  return useSyncExternalStore(
-    subscribe,
-    () => selector(getSnapshot()),
-    () => selector(getSnapshot()),
-  );
+  const getSelected = () => selector(getSnapshot());
+  const state = useSyncExternalStore(subscribe, getStateSnapshot, getStateSnapshot);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _ = state;
+  return getSelected();
+}
+
+function getStateSnapshot() {
+  return state;
 }
 
 export function getTournamentByCode(codigo: string): Tournament | undefined {
