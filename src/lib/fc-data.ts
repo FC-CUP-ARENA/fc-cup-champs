@@ -237,3 +237,295 @@ export function registerPlayer(input: {
   const updatedTeam = state.teams.find((t) => t.id === team.id)!;
   return { ok: true, player, team: updatedTeam };
 }
+
+/* ============= Admin actions ============= */
+
+function setState(next: State) {
+  state = next;
+  emit();
+}
+
+export function setTournamentStatus(id: string, status: Tournament["status"]) {
+  setState({
+    ...state,
+    tournaments: state.tournaments.map((t) => (t.id === id ? { ...t, status } : t)),
+  });
+  if (status === "em_andamento") {
+    // regenerate group matches if empty
+    const has = state.matches.some((m) => m.torneio_id === id);
+    if (!has) {
+      setState({ ...state, matches: buildInitialMatches() });
+    }
+  }
+}
+
+export function updateRegulamento(id: string, regulamento_texto: string) {
+  setState({
+    ...state,
+    tournaments: state.tournaments.map((t) =>
+      t.id === id ? { ...t, regulamento_texto } : t,
+    ),
+  });
+}
+
+export function toggleTeamAtivo(teamId: string, ativo: boolean) {
+  setState({
+    ...state,
+    teams: state.teams.map((t) =>
+      t.id === teamId ? { ...t, ativo_pelo_admin: ativo } : t,
+    ),
+  });
+}
+
+export function deletePlayer(playerId: string) {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return;
+  setState({
+    ...state,
+    players: state.players.filter((p) => p.id !== playerId),
+    teams: state.teams.map((t) =>
+      t.id === player.time_id ? { ...t, ocupado: false } : t,
+    ),
+  });
+}
+
+export function fillWithBots(torneio_id: string) {
+  const tour = state.tournaments.find((t) => t.id === torneio_id);
+  if (!tour) return;
+  const players = state.players.filter((p) => p.torneio_id === torneio_id);
+  const need = tour.max_jogadores - players.length;
+  if (need <= 0) return;
+  const freeTeams = state.teams.filter(
+    (t) => t.torneio_id === torneio_id && t.ativo_pelo_admin && !t.ocupado,
+  );
+  const toFill = Math.min(need, freeTeams.length);
+  const newPlayers: Player[] = [];
+  const usedTeamIds = new Set<string>();
+  for (let i = 0; i < toFill; i++) {
+    const team = freeTeams[i];
+    usedTeamIds.add(team.id);
+    newPlayers.push({
+      id: `bot-${Date.now()}-${i}`,
+      torneio_id,
+      nome_completo: `BOT ${players.length + i + 1}`,
+      gamertag_nick: `BOT_${players.length + i + 1}`,
+      mes_ano_nascimento: "01/2000",
+      time_id: team.id,
+    });
+  }
+  setState({
+    ...state,
+    players: [...state.players, ...newPlayers],
+    teams: state.teams.map((t) => (usedTeamIds.has(t.id) ? { ...t, ocupado: true } : t)),
+  });
+}
+
+/* ============= Match logic ============= */
+
+function isKnockoutPhase(f: Match["fase"]) {
+  return f === "quartas" || f === "semi" || f === "final";
+}
+
+function winnerOf(m: Match): string | null {
+  if (m.status !== "concluido" && m.status !== "wo") return null;
+  const gm = m.gols_mandante ?? 0;
+  const gv = m.gols_visitante ?? 0;
+  if (gm > gv) return m.time_mandante_id;
+  if (gv > gm) return m.time_visitante_id;
+  const pm = m.penaltis_mandante ?? 0;
+  const pv = m.penaltis_visitante ?? 0;
+  if (pm > pv) return m.time_mandante_id;
+  if (pv > pm) return m.time_visitante_id;
+  return null;
+}
+
+export function saveMatchScore(
+  matchId: string,
+  gm: number,
+  gv: number,
+  pm?: number | null,
+  pv?: number | null,
+): { ok: boolean; error?: string } {
+  const match = state.matches.find((m) => m.id === matchId);
+  if (!match) return { ok: false, error: "Partida não encontrada." };
+  const tied = gm === gv;
+  const ko = isKnockoutPhase(match.fase);
+  if (ko && tied) {
+    if (pm == null || pv == null) return { ok: false, error: "Informe os pênaltis." };
+    if (pm === pv) return { ok: false, error: "Pênaltis não podem empatar." };
+  }
+  setState({
+    ...state,
+    matches: state.matches.map((m) =>
+      m.id === matchId
+        ? {
+            ...m,
+            gols_mandante: gm,
+            gols_visitante: gv,
+            penaltis_mandante: ko && tied ? pm ?? null : null,
+            penaltis_visitante: ko && tied ? pv ?? null : null,
+            status: "concluido",
+          }
+        : m,
+    ),
+  });
+  advanceBracketIfReady(match.torneio_id);
+  return { ok: true };
+}
+
+export function launchWO(
+  matchId: string,
+  vencedor: "mandante" | "visitante",
+): { ok: boolean; error?: string } {
+  const match = state.matches.find((m) => m.id === matchId);
+  if (!match) return { ok: false, error: "Partida não encontrada." };
+  const gm = vencedor === "mandante" ? 3 : 0;
+  const gv = vencedor === "visitante" ? 3 : 0;
+  setState({
+    ...state,
+    matches: state.matches.map((m) =>
+      m.id === matchId
+        ? {
+            ...m,
+            gols_mandante: gm,
+            gols_visitante: gv,
+            penaltis_mandante: null,
+            penaltis_visitante: null,
+            status: "wo",
+          }
+        : m,
+    ),
+  });
+  advanceBracketIfReady(match.torneio_id);
+  return { ok: true };
+}
+
+/* ============= Standings ============= */
+
+export type Standing = {
+  time_id: string;
+  P: number; J: number; V: number; E: number; D: number;
+  GP: number; GC: number; SG: number;
+};
+
+export function computeGroupStandings(
+  torneio_id: string,
+  grupo: "A" | "B" | "C" | "D",
+): Standing[] {
+  const matches = state.matches.filter(
+    (m) => m.torneio_id === torneio_id && m.fase === "grupos" && m.grupo === grupo,
+  );
+  const teamIds = new Set<string>();
+  matches.forEach((m) => {
+    teamIds.add(m.time_mandante_id);
+    teamIds.add(m.time_visitante_id);
+  });
+  const table = new Map<string, Standing>();
+  teamIds.forEach((id) =>
+    table.set(id, { time_id: id, P: 0, J: 0, V: 0, E: 0, D: 0, GP: 0, GC: 0, SG: 0 }),
+  );
+  matches.forEach((m) => {
+    if (m.status === "pendente") return;
+    const gm = m.gols_mandante ?? 0;
+    const gv = m.gols_visitante ?? 0;
+    const a = table.get(m.time_mandante_id)!;
+    const b = table.get(m.time_visitante_id)!;
+    a.J++; b.J++;
+    a.GP += gm; a.GC += gv; a.SG = a.GP - a.GC;
+    b.GP += gv; b.GC += gm; b.SG = b.GP - b.GC;
+    if (gm > gv) { a.V++; a.P += 3; b.D++; }
+    else if (gv > gm) { b.V++; b.P += 3; a.D++; }
+    else { a.E++; b.E++; a.P++; b.P++; }
+  });
+  return Array.from(table.values()).sort((x, y) =>
+    y.P - x.P || y.V - x.V || y.SG - x.SG || y.GP - x.GP,
+  );
+}
+
+/* ============= Bracket ============= */
+
+// QF slot map (World Cup style with 4 groups A/B/C/D):
+// QF1: 1A vs 2B, QF2: 1C vs 2D, QF3: 1B vs 2A, QF4: 1D vs 2C
+// SF1: W(QF1) vs W(QF2), SF2: W(QF3) vs W(QF4)
+// Final: W(SF1) vs W(SF2)
+
+function allGroupsFinished(torneio_id: string): boolean {
+  const groupMatches = state.matches.filter(
+    (m) => m.torneio_id === torneio_id && m.fase === "grupos",
+  );
+  return groupMatches.length > 0 && groupMatches.every((m) => m.status !== "pendente");
+}
+
+function advanceBracketIfReady(torneio_id: string) {
+  // Ensure QF exists once groups done
+  const hasQF = state.matches.some((m) => m.torneio_id === torneio_id && m.fase === "quartas");
+  if (!hasQF && allGroupsFinished(torneio_id)) {
+    const A = computeGroupStandings(torneio_id, "A");
+    const B = computeGroupStandings(torneio_id, "B");
+    const C = computeGroupStandings(torneio_id, "C");
+    const D = computeGroupStandings(torneio_id, "D");
+    const qf: Match[] = [
+      makeKO("quartas", 0, A[0].time_id, B[1].time_id),
+      makeKO("quartas", 1, C[0].time_id, D[1].time_id),
+      makeKO("quartas", 2, B[0].time_id, A[1].time_id),
+      makeKO("quartas", 3, D[0].time_id, C[1].time_id),
+    ];
+    state = { ...state, matches: [...state.matches, ...qf] };
+  }
+  // SF
+  const qfMatches = state.matches
+    .filter((m) => m.torneio_id === torneio_id && m.fase === "quartas")
+    .sort((a, b) => a.ordem - b.ordem);
+  const hasSF = state.matches.some((m) => m.torneio_id === torneio_id && m.fase === "semi");
+  if (!hasSF && qfMatches.length === 4 && qfMatches.every((m) => winnerOf(m))) {
+    const sf: Match[] = [
+      makeKO("semi", 0, winnerOf(qfMatches[0])!, winnerOf(qfMatches[1])!),
+      makeKO("semi", 1, winnerOf(qfMatches[2])!, winnerOf(qfMatches[3])!),
+    ];
+    state = { ...state, matches: [...state.matches, ...sf] };
+  }
+  // Final
+  const sfMatches = state.matches
+    .filter((m) => m.torneio_id === torneio_id && m.fase === "semi")
+    .sort((a, b) => a.ordem - b.ordem);
+  const hasFinal = state.matches.some((m) => m.torneio_id === torneio_id && m.fase === "final");
+  if (!hasFinal && sfMatches.length === 2 && sfMatches.every((m) => winnerOf(m))) {
+    const fin = makeKO("final", 0, winnerOf(sfMatches[0])!, winnerOf(sfMatches[1])!);
+    state = { ...state, matches: [...state.matches, fin] };
+  }
+  emit();
+}
+
+function makeKO(
+  fase: "quartas" | "semi" | "final",
+  ordem: number,
+  mandante: string,
+  visitante: string,
+): Match {
+  return {
+    id: `m-${fase}-${ordem}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    torneio_id: TOURNAMENT_ID,
+    fase,
+    ordem,
+    time_mandante_id: mandante,
+    time_visitante_id: visitante,
+    gols_mandante: null,
+    gols_visitante: null,
+    penaltis_mandante: null,
+    penaltis_visitante: null,
+    status: "pendente",
+  };
+}
+
+export function getMatchWinner(m: Match) {
+  return winnerOf(m);
+}
+
+export function calcularIdade(mesAno: string): number | null {
+  const [mes, ano] = mesAno.split("/").map(Number);
+  if (!mes || !ano) return null;
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - ano;
+  if (hoje.getMonth() + 1 < mes) idade--;
+  return idade;
+}
