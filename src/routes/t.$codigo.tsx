@@ -161,6 +161,11 @@ function TournamentInner({ tournament }: { tournament: Tournament }) {
           >
             <Copy className="mr-1 h-3.5 w-3.5" /> Copiar link
           </Button>
+          <Button asChild size="sm" variant="ghost" className="shrink-0 text-xs text-muted-foreground hover:text-primary">
+            <Link to="/t/$codigo/admin" params={{ codigo: tournament.codigo_unico }}>
+              <Lock className="mr-1 h-3.5 w-3.5" /> Admin
+            </Link>
+          </Button>
         </div>
 
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
