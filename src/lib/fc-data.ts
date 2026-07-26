@@ -33,7 +33,9 @@ export type Player = {
 export type Match = {
   id: string;
   torneio_id: string;
-  fase: string;
+  fase: "grupos" | "quartas" | "semi" | "final";
+  grupo?: "A" | "B" | "C" | "D";
+  ordem: number;
   time_mandante_id: string;
   time_visitante_id: string;
   gols_mandante: number | null;
@@ -72,8 +74,8 @@ const initialTournament: Tournament = {
   regulamento_texto:
     "Regulamento oficial da I Copa Piracicaba de FC 26.\n\n1. Formato: Fase de grupos + mata-mata estilo Copa do Mundo.\n2. Jogos em EA Sports FC 26, dificuldade Lendário, 6 min por tempo.\n3. Cada jogador escolhe um único time no ato da inscrição.\n4. WO após 10 min de atraso.\n5. Em caso de empate no mata-mata: prorrogação + pênaltis.",
   max_jogadores: 16,
-  formato_mata_mata: "ida_e_volta",
-  status: "inscricoes_abertas",
+  formato_mata_mata: "jogo_unico",
+  status: "em_andamento",
 };
 
 const initialTeams: Team[] = teamsSeed.map((t, i) => ({
@@ -82,27 +84,26 @@ const initialTeams: Team[] = teamsSeed.map((t, i) => ({
   nome: t.nome,
   escudo_url: t.escudo,
   ativo_pelo_admin: true,
-  ocupado: [0, 3, 7, 10].includes(i),
+  ocupado: true,
 }));
 
-const initialPlayers: Player[] = [
-  {
-    id: "p1", torneio_id: TOURNAMENT_ID, nome_completo: "Lucas Almeida",
-    gamertag_nick: "LucasGOAT10", mes_ano_nascimento: "06/1998", time_id: "team-1",
-  },
-  {
-    id: "p2", torneio_id: TOURNAMENT_ID, nome_completo: "Rafael Souza",
-    gamertag_nick: "RafaKing", mes_ano_nascimento: "11/2001", time_id: "team-4",
-  },
-  {
-    id: "p3", torneio_id: TOURNAMENT_ID, nome_completo: "Pedro Martins",
-    gamertag_nick: "P3dr0M", mes_ano_nascimento: "03/1995", time_id: "team-8",
-  },
-  {
-    id: "p4", torneio_id: TOURNAMENT_ID, nome_completo: "Bruno Costa",
-    gamertag_nick: "BrunoC7", mes_ano_nascimento: "09/2000", time_id: "team-11",
-  },
+const realPlayers: Player[] = [
+  { id: "p1", torneio_id: TOURNAMENT_ID, nome_completo: "Lucas Almeida", gamertag_nick: "LucasGOAT10", mes_ano_nascimento: "06/1998", time_id: "team-1" },
+  { id: "p2", torneio_id: TOURNAMENT_ID, nome_completo: "Rafael Souza", gamertag_nick: "RafaKing", mes_ano_nascimento: "11/2001", time_id: "team-4" },
+  { id: "p3", torneio_id: TOURNAMENT_ID, nome_completo: "Pedro Martins", gamertag_nick: "P3dr0M", mes_ano_nascimento: "03/1995", time_id: "team-8" },
+  { id: "p4", torneio_id: TOURNAMENT_ID, nome_completo: "Bruno Costa", gamertag_nick: "BrunoC7", mes_ano_nascimento: "09/2000", time_id: "team-11" },
 ];
+const botPlayers: Player[] = initialTeams
+  .filter((t) => !realPlayers.some((p) => p.time_id === t.id))
+  .map((t, i) => ({
+    id: `pb-${i + 1}`,
+    torneio_id: TOURNAMENT_ID,
+    nome_completo: `Jogador ${i + 5}`,
+    gamertag_nick: `Player${i + 5}`,
+    mes_ano_nascimento: "01/2000",
+    time_id: t.id,
+  }));
+const initialPlayers: Player[] = [...realPlayers, ...botPlayers];
 
 type State = {
   tournaments: Tournament[];
@@ -111,11 +112,56 @@ type State = {
   matches: Match[];
 };
 
+function buildInitialMatches(): Match[] {
+  // 4 groups of 4 by team id order
+  const groups: Record<"A" | "B" | "C" | "D", string[]> = {
+    A: ["team-1", "team-2", "team-3", "team-4"],
+    B: ["team-5", "team-6", "team-7", "team-8"],
+    C: ["team-9", "team-10", "team-11", "team-12"],
+    D: ["team-13", "team-14", "team-15", "team-16"],
+  };
+  const matches: Match[] = [];
+  let ordem = 0;
+  (["A", "B", "C", "D"] as const).forEach((g) => {
+    const ids = groups[g];
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        matches.push({
+          id: `m-g${g}-${i}${j}`,
+          torneio_id: TOURNAMENT_ID,
+          fase: "grupos",
+          grupo: g,
+          ordem: ordem++,
+          time_mandante_id: ids[i],
+          time_visitante_id: ids[j],
+          gols_mandante: null,
+          gols_visitante: null,
+          penaltis_mandante: null,
+          penaltis_visitante: null,
+          status: "pendente",
+        });
+      }
+    }
+  });
+  // Pre-complete most group matches with deterministic scores; leave a few pending
+  const completedIdx = new Set([0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 18, 19, 20, 21, 22]);
+  matches.forEach((m, idx) => {
+    if (completedIdx.has(idx)) {
+      const gm = (idx * 3) % 4;
+      const gv = (idx * 2 + 1) % 4;
+      m.gols_mandante = gm;
+      m.gols_visitante = gv;
+      m.status = "concluido";
+    }
+  });
+  return matches;
+}
+
 let state: State = {
   tournaments: [initialTournament],
   teams: initialTeams,
   players: initialPlayers,
-  matches: [],
+  matches: buildInitialMatches(),
 };
 
 const listeners = new Set<() => void>();
