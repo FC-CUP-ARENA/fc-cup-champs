@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TCodigoRouteImport } from './routes/t.$codigo'
+import { Route as TCodigoAdminRouteImport } from './routes/t.$codigo.admin'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,39 @@ const TCodigoRoute = TCodigoRouteImport.update({
   path: '/t/$codigo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TCodigoAdminRoute = TCodigoAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => TCodigoRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/t/$codigo': typeof TCodigoRoute
+  '/t/$codigo': typeof TCodigoRouteWithChildren
+  '/t/$codigo/admin': typeof TCodigoAdminRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/t/$codigo': typeof TCodigoRoute
+  '/t/$codigo': typeof TCodigoRouteWithChildren
+  '/t/$codigo/admin': typeof TCodigoAdminRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/t/$codigo': typeof TCodigoRoute
+  '/t/$codigo': typeof TCodigoRouteWithChildren
+  '/t/$codigo/admin': typeof TCodigoAdminRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/t/$codigo'
+  fullPaths: '/' | '/t/$codigo' | '/t/$codigo/admin'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/t/$codigo'
-  id: '__root__' | '/' | '/t/$codigo'
+  to: '/' | '/t/$codigo' | '/t/$codigo/admin'
+  id: '__root__' | '/' | '/t/$codigo' | '/t/$codigo/admin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  TCodigoRoute: typeof TCodigoRoute
+  TCodigoRoute: typeof TCodigoRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +74,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TCodigoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/t/$codigo/admin': {
+      id: '/t/$codigo/admin'
+      path: '/admin'
+      fullPath: '/t/$codigo/admin'
+      preLoaderRoute: typeof TCodigoAdminRouteImport
+      parentRoute: typeof TCodigoRoute
+    }
   }
 }
 
+interface TCodigoRouteChildren {
+  TCodigoAdminRoute: typeof TCodigoAdminRoute
+}
+
+const TCodigoRouteChildren: TCodigoRouteChildren = {
+  TCodigoAdminRoute: TCodigoAdminRoute,
+}
+
+const TCodigoRouteWithChildren =
+  TCodigoRoute._addFileChildren(TCodigoRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  TCodigoRoute: TCodigoRoute,
+  TCodigoRoute: TCodigoRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
