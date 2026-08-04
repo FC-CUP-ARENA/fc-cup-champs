@@ -36,7 +36,7 @@ import {
 
 type Search = { key?: string };
 
-export const Route = createFileRoute("/t/$codigo/admin")({
+export const Route = createFileRoute("/t_/$codigo/admin")({
   validateSearch: (s: Record<string, unknown>): Search => ({
     key: typeof s.key === "string" ? s.key : undefined,
   }),
