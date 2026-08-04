@@ -44,6 +44,7 @@ export type Match = {
   penaltis_mandante: number | null;
   penaltis_visitante: number | null;
   status: "pendente" | "concluido" | "wo";
+  data_jogo?: string | null;
 };
 
 const TOURNAMENT_ID = "t1";
@@ -607,6 +608,33 @@ function makeKO(
 
 export function getMatchWinner(m: Match) {
   return winnerOf(m);
+}
+
+export function hasTournamentStarted(torneio_id: string): boolean {
+  return state.matches.some(
+    (m) => m.torneio_id === torneio_id && (m.status === "concluido" || m.status === "wo"),
+  );
+}
+
+export function setMatchDate(matchId: string, data_jogo: string | null) {
+  setState({
+    ...state,
+    matches: state.matches.map((m) =>
+      m.id === matchId ? { ...m, data_jogo } : m,
+    ),
+  });
+}
+
+export function formatMatchDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function calcularIdade(mesAno: string): number | null {

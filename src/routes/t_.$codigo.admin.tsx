@@ -36,6 +36,8 @@ import {
   clearGroups,
   generateGroupMatches,
   setTeamGroup,
+  setMatchDate,
+  hasTournamentStarted,
   GRUPOS,
   type Tournament,
   type Match,
@@ -43,6 +45,14 @@ import {
 } from "@/lib/fc-data";
 
 type Search = { key?: string };
+
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off * 60_000);
+  return local.toISOString().slice(0, 16);
+}
 
 export const Route = createFileRoute("/t_/$codigo/admin")({
   validateSearch: (s: Record<string, unknown>): Search => ({
@@ -205,24 +215,35 @@ function AdminInner({ tournament }: { tournament: Tournament }) {
 /* ---- Config ---- */
 function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
   const [reg, setReg] = useState(tournament.regulamento_texto);
+  const started = useFcState((s) => hasTournamentStarted(tournament.id));
 
   return (
     <>
       <Card className="border-border bg-card p-5">
         <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-widest text-primary">Status do Torneio</h3>
         <div className="flex flex-wrap gap-2">
-          {(["inscricoes_abertas", "em_andamento", "finalizado"] as const).map((s) => (
-            <Button
-              key={s}
-              size="sm"
-              variant={tournament.status === s ? "default" : "outline"}
-              onClick={() => { setTournamentStatus(tournament.id, s); toast.success("Status atualizado"); }}
-              className={tournament.status === s ? "bg-primary text-primary-foreground hover:bg-primary-glow" : ""}
-            >
-              {s === "inscricoes_abertas" ? "Inscrições Abertas" : s === "em_andamento" ? "Em Andamento" : "Finalizado"}
-            </Button>
-          ))}
+          {(["inscricoes_abertas", "em_andamento", "finalizado"] as const).map((s) => {
+            const locked = s === "inscricoes_abertas" && started;
+            return (
+              <Button
+                key={s}
+                size="sm"
+                variant={tournament.status === s ? "default" : "outline"}
+                disabled={locked}
+                onClick={() => { setTournamentStatus(tournament.id, s); toast.success("Status atualizado"); }}
+                className={tournament.status === s ? "bg-primary text-primary-foreground hover:bg-primary-glow" : ""}
+                title={locked ? "Inscrições encerradas: o torneio já começou" : undefined}
+              >
+                {s === "inscricoes_abertas" ? "Inscrições Abertas" : s === "em_andamento" ? "Em Andamento" : "Finalizado"}
+              </Button>
+            );
+          })}
         </div>
+        {started && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Inscrições não podem mais ser reabertas: já existe pelo menos uma partida concluída ou de W.O.
+          </p>
+        )}
       </Card>
 
       <Card className="border-border bg-card p-5">
@@ -533,6 +554,7 @@ function MatchCard({ match, teams }: { match: Match; teams: Map<string, Team> })
   const [gv, setGv] = useState<string>(match.gols_visitante?.toString() ?? "");
   const [pm, setPm] = useState<string>(match.penaltis_mandante?.toString() ?? "");
   const [pv, setPv] = useState<string>(match.penaltis_visitante?.toString() ?? "");
+  const [data, setData] = useState<string>(match.data_jogo ?? "");
   const [woOpen, setWoOpen] = useState(false);
 
   useEffect(() => {
@@ -540,7 +562,8 @@ function MatchCard({ match, teams }: { match: Match; teams: Map<string, Team> })
     setGv(match.gols_visitante?.toString() ?? "");
     setPm(match.penaltis_mandante?.toString() ?? "");
     setPv(match.penaltis_visitante?.toString() ?? "");
-  }, [match.id, match.status]);
+    setData(match.data_jogo ?? "");
+  }, [match.id, match.status, match.data_jogo]);
 
   const isKO = match.fase !== "grupos";
   const tied = gm !== "" && gv !== "" && Number(gm) === Number(gv);
@@ -589,6 +612,19 @@ function MatchCard({ match, teams }: { match: Match; teams: Map<string, Team> })
           <Input value={pv} onChange={(e) => setPv(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
         </div>
       )}
+
+      <div className="mt-2 flex items-center gap-2">
+        <Label className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0">Data</Label>
+        <Input
+          type="datetime-local"
+          value={data ? toLocalInput(data) : ""}
+          onChange={(e) => {
+            setData(e.target.value);
+            setMatchDate(match.id, e.target.value ? new Date(e.target.value).toISOString() : null);
+          }}
+          className="h-7 flex-1 text-xs"
+        />
+      </div>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">

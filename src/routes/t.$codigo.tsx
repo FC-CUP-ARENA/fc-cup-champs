@@ -11,6 +11,7 @@ import {
   LayoutGrid,
   Swords,
   UserPlus,
+  Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,6 +41,7 @@ import {
   useFcState,
   computeGroupStandings,
   getMatchWinner,
+  formatMatchDate,
   GRUPOS,
   type Team,
   type Tournament,
@@ -267,26 +269,33 @@ function ScoreRow({ match, teams }: { match: Match; teams: Map<string, Team> }) 
   return (
     <div
       className={[
-        "flex items-center justify-between gap-2 rounded-lg border p-2.5 text-sm",
+        "rounded-lg border p-2.5 text-sm",
         done ? "border-primary/30 bg-primary/5" : "border-border bg-background/40",
       ].join(" ")}
     >
-      <span className={["flex min-w-0 flex-1 items-center gap-1.5", winner === a?.id ? "font-bold text-primary" : ""].join(" ")}>
-        <span className="text-lg">{a?.escudo_url}</span>
-        <span className="truncate">{a?.nome}</span>
-      </span>
-      <span className="shrink-0 font-mono text-sm font-bold">
-        {done ? `${match.gols_mandante ?? 0} x ${match.gols_visitante ?? 0}` : "— x —"}
-        {match.penaltis_mandante != null && match.penaltis_visitante != null && (
-          <span className="ml-1 text-[10px] text-muted-foreground">
-            ({match.penaltis_mandante}-{match.penaltis_visitante} pên.)
-          </span>
-        )}
-      </span>
-      <span className={["flex min-w-0 flex-1 items-center justify-end gap-1.5", winner === b?.id ? "font-bold text-primary" : ""].join(" ")}>
-        <span className="truncate text-right">{b?.nome}</span>
-        <span className="text-lg">{b?.escudo_url}</span>
-      </span>
+      <div className="flex items-center justify-between gap-2">
+        <span className={["flex min-w-0 flex-1 items-center gap-1.5", winner === a?.id ? "font-bold text-primary" : ""].join(" ")}>
+          <span className="text-lg">{a?.escudo_url}</span>
+          <span className="truncate">{a?.nome}</span>
+        </span>
+        <span className="shrink-0 font-mono text-sm font-bold">
+          {done ? `${match.gols_mandante ?? 0} x ${match.gols_visitante ?? 0}` : "— x —"}
+          {match.penaltis_mandante != null && match.penaltis_visitante != null && (
+            <span className="ml-1 text-[10px] text-muted-foreground">
+              ({match.penaltis_mandante}-{match.penaltis_visitante} pên.)
+            </span>
+          )}
+        </span>
+        <span className={["flex min-w-0 flex-1 items-center justify-end gap-1.5", winner === b?.id ? "font-bold text-primary" : ""].join(" ")}>
+          <span className="truncate text-right">{b?.nome}</span>
+          <span className="text-lg">{b?.escudo_url}</span>
+        </span>
+      </div>
+      {match.data_jogo && (
+        <div className="mt-1.5 flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+          <Calendar className="h-3 w-3" /> {formatMatchDate(match.data_jogo)}
+        </div>
+      )}
     </div>
   );
 }
