@@ -12,6 +12,7 @@ import {
   Swords,
   UserPlus,
   Calendar,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +43,7 @@ import {
   computeGroupStandings,
   getMatchWinner,
   formatMatchDate,
+  isRegistrationOpen,
   GRUPOS,
   type Team,
   type Tournament,
@@ -465,6 +467,25 @@ function RegistrationForm({
     [teams],
   );
 
+  const players = useFcState((s) =>
+    s.players.filter((p) => p.torneio_id === tournament.id),
+  );
+  const playerByTeam = useMemo(
+    () => new Map(players.map((p) => [p.time_id, p])),
+    [players],
+  );
+
+  const regStatus = useMemo(() => isRegistrationOpen(tournament), [tournament]);
+  const freeTeams = activeTeams.filter((t) => !t.ocupado);
+  const noTeams = freeTeams.length === 0;
+  const locked = !regStatus.open || noTeams;
+
+  const lockReason = !regStatus.open
+    ? regStatus.reason
+    : noTeams
+      ? "Não há mais times disponíveis para inscrição."
+      : null;
+
   const formatPhone = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 11);
     if (digits.length <= 2) return `+55 (${digits}`;
@@ -520,6 +541,18 @@ function RegistrationForm({
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      {locked && lockReason && (
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          <div>
+            <p className="font-display text-sm font-bold uppercase tracking-widest text-destructive">
+              Inscrições indisponíveis
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{lockReason}</p>
+          </div>
+        </div>
+      )}
+
       <Card className="border-border bg-card p-5">
         <h3 className="mb-4 font-display text-sm font-bold uppercase tracking-widest text-primary">
           Seus dados
@@ -534,6 +567,7 @@ function RegistrationForm({
               onChange={(e) => setNome(e.target.value)}
               placeholder="Ex: João da Silva"
               className="mt-1.5"
+              disabled={locked}
             />
           </div>
 
@@ -545,13 +579,14 @@ function RegistrationForm({
               onChange={(e) => setNick(e.target.value)}
               placeholder="PSN / Xbox Live / EA ID"
               className="mt-1.5 font-mono"
+              disabled={locked}
             />
           </div>
 
           <div>
             <Label>Mês / Ano de nascimento *</Label>
             <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <Select value={mes} onValueChange={setMes}>
+              <Select value={mes} onValueChange={setMes} disabled={locked}>
                 <SelectTrigger>
                   <SelectValue placeholder="Mês" />
                 </SelectTrigger>
@@ -561,7 +596,7 @@ function RegistrationForm({
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={ano} onValueChange={setAno}>
+              <Select value={ano} onValueChange={setAno} disabled={locked}>
                 <SelectTrigger>
                   <SelectValue placeholder="Ano" />
                 </SelectTrigger>
@@ -585,6 +620,7 @@ function RegistrationForm({
               placeholder="+55 (00) 00000-0000"
               className="mt-1.5 font-mono"
               inputMode="tel"
+              disabled={locked}
             />
           </div>
         </div>
@@ -596,14 +632,15 @@ function RegistrationForm({
             Escolha seu time
           </h3>
           <span className="text-xs text-muted-foreground">
-            {activeTeams.filter((t) => !t.ocupado).length} livres
+            {freeTeams.length} livres
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
           {activeTeams.map((team) => {
-            const disabled = team.ocupado;
+            const disabled = team.ocupado || locked;
             const selected = timeId === team.id;
+            const player = playerByTeam.get(team.id);
             return (
               <button
                 key={team.id}
@@ -611,7 +648,7 @@ function RegistrationForm({
                 disabled={disabled}
                 onClick={() => setTimeId(team.id)}
                 className={[
-                  "group relative flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition",
+                  "group relative flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition",
                   disabled
                     ? "cursor-not-allowed border-border bg-muted/40 opacity-50 grayscale"
                     : selected
@@ -620,10 +657,21 @@ function RegistrationForm({
                 ].join(" ")}
               >
                 <div className="text-3xl leading-none">{team.escudo_url}</div>
-                <div className="min-w-0 text-xs font-bold text-foreground">
-                  <span className="line-clamp-2">{team.nome}</span>
-                </div>
-                {disabled && (
+                {team.ocupado && player ? (
+                  <div className="min-w-0">
+                    <div className="line-clamp-1 text-xs font-bold text-foreground">
+                      {player.gamertag_nick}
+                    </div>
+                    <div className="line-clamp-1 text-[10px] text-muted-foreground">
+                      {team.nome}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="min-w-0 text-xs font-bold text-foreground">
+                    <span className="line-clamp-2">{team.nome}</span>
+                  </div>
+                )}
+                {team.ocupado && (
                   <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-destructive/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-destructive">
                     <Lock className="h-2.5 w-2.5" /> Indisponível
                   </span>
@@ -642,6 +690,7 @@ function RegistrationForm({
       <Button
         type="submit"
         className="h-12 w-full bg-primary text-base font-bold text-primary-foreground shadow-[var(--shadow-neon)] hover:bg-primary-glow"
+        disabled={locked}
       >
         Confirmar inscrição
       </Button>

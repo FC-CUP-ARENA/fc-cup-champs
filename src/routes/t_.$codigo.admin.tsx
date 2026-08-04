@@ -38,6 +38,7 @@ import {
   setTeamGroup,
   setMatchDate,
   hasTournamentStarted,
+  setRegistrationDeadline,
   GRUPOS,
   type Tournament,
   type Match,
@@ -215,6 +216,7 @@ function AdminInner({ tournament }: { tournament: Tournament }) {
 /* ---- Config ---- */
 function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
   const [reg, setReg] = useState(tournament.regulamento_texto);
+  const [deadline, setDeadline] = useState<string>(tournament.data_limite_inscricoes ?? "");
   const started = useFcState((s) => hasTournamentStarted(tournament.id));
 
   return (
@@ -242,6 +244,39 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
         {started && (
           <p className="mt-3 text-xs text-muted-foreground">
             Inscrições não podem mais ser reabertas: já existe pelo menos uma partida concluída ou de W.O.
+          </p>
+        )}
+      </Card>
+
+      <Card className="border-border bg-card p-5">
+        <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-widest text-primary">Data Limite de Inscrição</h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Defina até quando os jogadores podem se inscrever. Após essa data, o formulário público fica bloqueado.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            type="datetime-local"
+            value={deadline ? toLocalInput(deadline) : ""}
+            onChange={(e) => {
+              setDeadline(e.target.value);
+              setRegistrationDeadline(tournament.id, e.target.value ? new Date(e.target.value).toISOString() : null);
+            }}
+            className="h-9 max-w-xs text-sm"
+          />
+          {deadline && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => { setDeadline(""); setRegistrationDeadline(tournament.id, null); toast.success("Data limite removida"); }}
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              Remover data limite
+            </Button>
+          )}
+        </div>
+        {deadline && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Inscrições encerram em {new Date(deadline).toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short" })}.
           </p>
         )}
       </Card>

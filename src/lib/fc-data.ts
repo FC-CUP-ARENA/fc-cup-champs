@@ -9,6 +9,7 @@ export type Tournament = {
   max_jogadores: number;
   formato_mata_mata: "jogo_unico" | "ida_e_volta";
   status: "inscricoes_abertas" | "em_andamento" | "finalizado";
+  data_limite_inscricoes?: string | null;
 };
 
 export type Team = {
@@ -78,6 +79,7 @@ const initialTournament: Tournament = {
   max_jogadores: 16,
   formato_mata_mata: "jogo_unico",
   status: "em_andamento",
+  data_limite_inscricoes: null,
 };
 
 const initialTeams: Team[] = teamsSeed.map((t, i) => ({
@@ -246,6 +248,31 @@ export function registerPlayer(input: {
 function setState(next: State) {
   state = next;
   emit();
+}
+
+export function setRegistrationDeadline(id: string, data_limite: string | null) {
+  setState({
+    ...state,
+    tournaments: state.tournaments.map((t) =>
+      t.id === id ? { ...t, data_limite_inscricoes: data_limite } : t,
+    ),
+  });
+}
+
+export function isRegistrationOpen(tournament: Tournament): { open: boolean; reason?: string } {
+  if (tournament.status !== "inscricoes_abertas") {
+    return { open: false, reason: "As inscrições estão fechadas para este torneio." };
+  }
+  if (hasTournamentStarted(tournament.id)) {
+    return { open: false, reason: "O torneio já começou. Não é mais possível se inscrever." };
+  }
+  if (tournament.data_limite_inscricoes) {
+    const limite = new Date(tournament.data_limite_inscricoes);
+    if (!isNaN(limite.getTime()) && Date.now() > limite.getTime()) {
+      return { open: false, reason: "O prazo de inscrição encerrou-se." };
+    }
+  }
+  return { open: true };
 }
 
 export function setTournamentStatus(id: string, status: Tournament["status"]) {
