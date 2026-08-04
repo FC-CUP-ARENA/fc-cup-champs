@@ -18,6 +18,7 @@ export type Team = {
   escudo_url: string;
   ativo_pelo_admin: boolean;
   ocupado: boolean;
+  grupo?: "A" | "B" | "C" | "D" | null;
 };
 
 export type Player = {
@@ -85,6 +86,7 @@ const initialTeams: Team[] = teamsSeed.map((t, i) => ({
   escudo_url: t.escudo,
   ativo_pelo_admin: true,
   ocupado: true,
+  grupo: (["A", "B", "C", "D"] as const)[Math.floor(i / 4)],
 }));
 
 const realPlayers: Player[] = [
