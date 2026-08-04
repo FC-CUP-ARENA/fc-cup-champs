@@ -51,8 +51,8 @@ export const Route = createFileRoute("/t_/$codigo/admin")({
 });
 
 function AdminPage() {
-  const { codigo } = useParams({ from: "/t/$codigo/admin" });
-  const { key } = useSearch({ from: "/t/$codigo/admin" });
+  const { codigo } = useParams({ from: "/t_/$codigo/admin" });
+  const { key } = useSearch({ from: "/t_/$codigo/admin" });
   const tournament = useFcState((s) =>
     s.tournaments.find((t) => t.codigo_unico.toLowerCase() === codigo.toLowerCase()),
   );
