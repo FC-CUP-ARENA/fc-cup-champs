@@ -38,8 +38,12 @@ import {
   getTournamentByCode,
   registerPlayer,
   useFcState,
+  computeGroupStandings,
+  getMatchWinner,
+  GRUPOS,
   type Team,
   type Tournament,
+  type Match,
 } from "@/lib/fc-data";
 
 export const Route = createFileRoute("/t/$codigo")({
@@ -203,22 +207,14 @@ function TournamentInner({ tournament }: { tournament: Tournament }) {
           </TabsContent>
 
           <TabsContent value="grupos" className="mt-6">
-            <EmptyPanel
-              icon={<LayoutGrid className="h-6 w-6" />}
-              title="Grupos ainda não sorteados"
-              description={`Aguardando ${tournament.max_jogadores - inscritos} jogador(es) para iniciar o sorteio da fase de grupos.`}
-            />
+            <PublicGroups tournament={tournament} teams={teams} />
             <p className="mt-4 text-center text-xs text-muted-foreground">
               {players.length} jogador(es) confirmado(s)
             </p>
           </TabsContent>
 
           <TabsContent value="mata" className="mt-6">
-            <EmptyPanel
-              icon={<Swords className="h-6 w-6" />}
-              title="Mata-mata bloqueado"
-              description={`Formato: ${tournament.formato_mata_mata === "ida_e_volta" ? "Ida e Volta" : "Jogo Único"}. Disponível após o encerramento da fase de grupos.`}
-            />
+            <PublicBracket tournament={tournament} teams={teams} />
           </TabsContent>
 
           <TabsContent value="regulamento" className="mt-6">
@@ -258,6 +254,173 @@ function EmptyPanel({
         {description}
       </p>
     </Card>
+  );
+}
+
+/* ------------------------ Public groups & bracket ------------------------ */
+
+function ScoreRow({ match, teams }: { match: Match; teams: Map<string, Team> }) {
+  const a = teams.get(match.time_mandante_id);
+  const b = teams.get(match.time_visitante_id);
+  const done = match.status !== "pendente";
+  const winner = getMatchWinner(match);
+  return (
+    <div
+      className={[
+        "flex items-center justify-between gap-2 rounded-lg border p-2.5 text-sm",
+        done ? "border-primary/30 bg-primary/5" : "border-border bg-background/40",
+      ].join(" ")}
+    >
+      <span className={["flex min-w-0 flex-1 items-center gap-1.5", winner === a?.id ? "font-bold text-primary" : ""].join(" ")}>
+        <span className="text-lg">{a?.escudo_url}</span>
+        <span className="truncate">{a?.nome}</span>
+      </span>
+      <span className="shrink-0 font-mono text-sm font-bold">
+        {done ? `${match.gols_mandante ?? 0} x ${match.gols_visitante ?? 0}` : "— x —"}
+        {match.penaltis_mandante != null && match.penaltis_visitante != null && (
+          <span className="ml-1 text-[10px] text-muted-foreground">
+            ({match.penaltis_mandante}-{match.penaltis_visitante} pên.)
+          </span>
+        )}
+      </span>
+      <span className={["flex min-w-0 flex-1 items-center justify-end gap-1.5", winner === b?.id ? "font-bold text-primary" : ""].join(" ")}>
+        <span className="truncate text-right">{b?.nome}</span>
+        <span className="text-lg">{b?.escudo_url}</span>
+      </span>
+    </div>
+  );
+}
+
+function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
+  const matches = useFcState((s) =>
+    s.matches.filter((m) => m.torneio_id === tournament.id && m.fase === "grupos"),
+  );
+  const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const anyGroup = teams.some((t) => t.grupo);
+
+  if (!anyGroup) {
+    return (
+      <EmptyPanel
+        icon={<LayoutGrid className="h-6 w-6" />}
+        title="Grupos ainda não sorteados"
+        description="O organizador ainda não definiu a divisão dos grupos."
+      />
+    );
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      {GRUPOS.map((g) => {
+        const standings = computeGroupStandings(tournament.id, g);
+        if (standings.length === 0) return null;
+        const gm = matches.filter((m) => m.grupo === g).sort((a, b) => a.ordem - b.ordem);
+        return (
+          <Card key={g} className="border-border bg-card p-4">
+            <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-widest text-primary">
+              Grupo {g}
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <th className="py-1 text-left">Time</th>
+                    {["P", "J", "V", "E", "D", "GP", "GC", "SG"].map((h) => (
+                      <th key={h} className="w-7 py-1 text-right">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {standings.map((s, idx) => {
+                    const t = teamMap.get(s.time_id);
+                    return (
+                      <tr key={s.time_id} className={idx < 2 ? "bg-primary/5" : ""}>
+                        <td className="truncate py-1.5">
+                          <span className="mr-1">{t?.escudo_url}</span>
+                          <span className="text-xs font-semibold">{t?.nome}</span>
+                        </td>
+                        <td className="py-1.5 text-right font-bold">{s.P}</td>
+                        <td className="py-1.5 text-right">{s.J}</td>
+                        <td className="py-1.5 text-right">{s.V}</td>
+                        <td className="py-1.5 text-right">{s.E}</td>
+                        <td className="py-1.5 text-right">{s.D}</td>
+                        <td className="py-1.5 text-right">{s.GP}</td>
+                        <td className="py-1.5 text-right">{s.GC}</td>
+                        <td className="py-1.5 text-right">{s.SG}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {gm.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Resultados</p>
+                {gm.map((m) => (
+                  <ScoreRow key={m.id} match={m} teams={teamMap} />
+                ))}
+              </div>
+            )}
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
+  const matches = useFcState((s) =>
+    s.matches.filter((m) => m.torneio_id === tournament.id && m.fase !== "grupos"),
+  );
+  const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
+  const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
+  const f = matches.filter((m) => m.fase === "final");
+
+  if (q.length === 0) {
+    return (
+      <EmptyPanel
+        icon={<Swords className="h-6 w-6" />}
+        title="Mata-mata bloqueado"
+        description={`Formato: ${tournament.formato_mata_mata === "ida_e_volta" ? "Ida e Volta" : "Jogo Único"}. Disponível após o encerramento da fase de grupos.`}
+      />
+    );
+  }
+
+  const champion = f[0] ? getMatchWinner(f[0]) : null;
+
+  return (
+    <div className="space-y-4">
+      {champion && (
+        <Card className="border-primary/40 bg-primary/10 p-5 text-center shadow-[var(--shadow-neon)]">
+          <Trophy className="mx-auto h-7 w-7 text-primary" />
+          <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>
+          <p className="mt-1 font-display text-xl font-black">
+            {teamMap.get(champion)?.escudo_url} {teamMap.get(champion)?.nome}
+          </p>
+        </Card>
+      )}
+      <div className="grid gap-4 md:grid-cols-3">
+        {([
+          ["Quartas de Final", q, ""],
+          ["Semifinal", s, "Aguardando quartas"],
+          ["Final", f, "Aguardando semifinal"],
+        ] as const).map(([title, list, placeholder]) => (
+          <div key={title}>
+            <h3 className="mb-2 font-display text-sm font-bold uppercase tracking-widest text-primary">{title}</h3>
+            <div className="space-y-2">
+              {list.length === 0 && placeholder && (
+                <div className="rounded-lg border border-dashed border-border bg-card/40 p-4 text-center text-xs text-muted-foreground">
+                  {placeholder}
+                </div>
+              )}
+              {list.map((m) => (
+                <ScoreRow key={m.id} match={m} teams={teamMap} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
