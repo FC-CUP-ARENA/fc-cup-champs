@@ -501,6 +501,9 @@ export function computeGroupStandings(
     (m) => m.torneio_id === torneio_id && m.fase === "grupos" && m.grupo === grupo,
   );
   const teamIds = new Set<string>();
+  state.teams
+    .filter((t) => t.torneio_id === torneio_id && t.grupo === grupo && t.ocupado)
+    .forEach((t) => teamIds.add(t.id));
   matches.forEach((m) => {
     teamIds.add(m.time_mandante_id);
     teamIds.add(m.time_visitante_id);
