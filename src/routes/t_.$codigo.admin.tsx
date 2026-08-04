@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Copy, KeyRound, Trash2, Bot, Save, AlertTriangle, Trophy } from "lucide-react";
+import { ArrowLeft, Copy, KeyRound, Trash2, Bot, Save, AlertTriangle, Trophy, Shuffle, RefreshCw, Eraser } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   useFcState,
   setTournamentStatus,
   updateRegulamento,
@@ -29,6 +32,11 @@ import {
   computeGroupStandings,
   getMatchWinner,
   calcularIdade,
+  drawGroups,
+  clearGroups,
+  generateGroupMatches,
+  setTeamGroup,
+  GRUPOS,
   type Tournament,
   type Match,
   type Team,
@@ -329,14 +337,19 @@ function GroupsPanel({
 }: { tournament: Tournament; teams: Team[]; matches: Match[] }) {
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const groupMatches = matches.filter((m) => m.fase === "grupos");
-  if (groupMatches.length === 0) {
-    return <p className="text-center text-sm text-muted-foreground">Sem partidas de grupos. Defina o status para "Em Andamento".</p>;
-  }
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="space-y-6">
+      <GroupManager tournament={tournament} teams={teams} />
+      {groupMatches.length === 0 && (
+        <p className="text-center text-sm text-muted-foreground">
+          Nenhuma partida de grupo gerada ainda. Sorteie ou defina os grupos e clique em "Gerar partidas".
+        </p>
+      )}
+      <div className="grid gap-6 lg:grid-cols-2">
       {(["A", "B", "C", "D"] as const).map((g) => {
         const standings = computeGroupStandings(tournament.id, g);
         const gm = groupMatches.filter((m) => m.grupo === g).sort((a, b) => a.ordem - b.ordem);
+        if (standings.length === 0) return null;
         return (
           <Card key={g} className="border-border bg-card p-4">
             <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-widest text-primary">Grupo {g}</h3>
@@ -388,7 +401,75 @@ function GroupsPanel({
           </Card>
         );
       })}
+      </div>
     </div>
+  );
+}
+
+/* ---- Group manager (sorteio / manual) ---- */
+function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
+  const inscritos = teams.filter((t) => t.ocupado && t.ativo_pelo_admin);
+  return (
+    <Card className="border-border bg-card p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-display text-sm font-bold uppercase tracking-widest text-primary">
+          Gerenciar Grupos
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            onClick={() => { drawGroups(tournament.id); toast.success("Grupos sorteados e partidas geradas"); }}
+            className="bg-primary text-primary-foreground hover:bg-primary-glow"
+          >
+            <Shuffle className="mr-1 h-3.5 w-3.5" /> Sortear grupos
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const res = generateGroupMatches(tournament.id);
+              if (!res.ok) toast.error(res.error || "Erro");
+              else toast.success("Partidas geradas");
+            }}
+          >
+            <RefreshCw className="mr-1 h-3.5 w-3.5" /> Gerar partidas
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => { clearGroups(tournament.id); toast.success("Grupos limpos"); }}
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Eraser className="mr-1 h-3.5 w-3.5" /> Limpar
+          </Button>
+        </div>
+      </div>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Gerar partidas recria a fase de grupos e apaga placares e o mata-mata atual.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {inscritos.map((t) => (
+          <div key={t.id} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background/40 p-2.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="text-xl">{t.escudo_url}</span>
+              <span className="truncate text-sm font-bold">{t.nome}</span>
+            </div>
+            <Select
+              value={t.grupo ?? "none"}
+              onValueChange={(v) => setTeamGroup(t.id, v === "none" ? null : (v as "A"))}
+            >
+              <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem grupo</SelectItem>
+                {GRUPOS.map((g) => (
+                  <SelectItem key={g} value={g}>Grupo {g}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
