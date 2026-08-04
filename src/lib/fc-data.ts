@@ -324,6 +324,89 @@ export function fillWithBots(torneio_id: string) {
 
 /* ============= Match logic ============= */
 
+export const GRUPOS = ["A", "B", "C", "D"] as const;
+export type Grupo = (typeof GRUPOS)[number];
+
+/** Define manualmente o grupo de um time. */
+export function setTeamGroup(teamId: string, grupo: Grupo | null) {
+  setState({
+    ...state,
+    teams: state.teams.map((t) => (t.id === teamId ? { ...t, grupo } : t)),
+  });
+}
+
+/** Sorteia aleatoriamente os times ocupados em 4 grupos. */
+export function drawGroups(torneio_id: string) {
+  const pool = state.teams.filter(
+    (t) => t.torneio_id === torneio_id && t.ativo_pelo_admin && t.ocupado,
+  );
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const assign = new Map<string, Grupo>();
+  shuffled.forEach((t, i) => assign.set(t.id, GRUPOS[i % 4]));
+  setState({
+    ...state,
+    teams: state.teams.map((t) =>
+      t.torneio_id === torneio_id
+        ? { ...t, grupo: assign.get(t.id) ?? null }
+        : t,
+    ),
+  });
+  generateGroupMatches(torneio_id);
+}
+
+export function clearGroups(torneio_id: string) {
+  setState({
+    ...state,
+    teams: state.teams.map((t) =>
+      t.torneio_id === torneio_id ? { ...t, grupo: null } : t,
+    ),
+    matches: state.matches.filter((m) => m.torneio_id !== torneio_id),
+  });
+}
+
+/** (Re)gera as partidas da fase de grupos a partir dos grupos definidos. */
+export function generateGroupMatches(torneio_id: string): {
+  ok: boolean;
+  error?: string;
+} {
+  const matches: Match[] = [];
+  let ordem = 0;
+  let total = 0;
+  GRUPOS.forEach((g) => {
+    const ids = state.teams
+      .filter((t) => t.torneio_id === torneio_id && t.grupo === g && t.ocupado)
+      .map((t) => t.id);
+    total += ids.length;
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        matches.push({
+          id: `m-g${g}-${ids[i]}-${ids[j]}`,
+          torneio_id,
+          fase: "grupos",
+          grupo: g,
+          ordem: ordem++,
+          time_mandante_id: ids[i],
+          time_visitante_id: ids[j],
+          gols_mandante: null,
+          gols_visitante: null,
+          penaltis_mandante: null,
+          penaltis_visitante: null,
+          status: "pendente",
+        });
+      }
+    }
+  });
+  if (total === 0) return { ok: false, error: "Nenhum time foi alocado em grupos." };
+  setState({
+    ...state,
+    matches: [
+      ...state.matches.filter((m) => m.torneio_id !== torneio_id),
+      ...matches,
+    ],
+  });
+  return { ok: true };
+}
+
 function isKnockoutPhase(f: Match["fase"]) {
   return f === "quartas" || f === "semi" || f === "final";
 }
