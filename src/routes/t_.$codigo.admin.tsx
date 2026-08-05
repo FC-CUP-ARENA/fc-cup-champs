@@ -37,6 +37,7 @@ import {
   launchWO,
   computeGroupStandings,
   getMatchWinner,
+  getTieWinner,
   calcularIdade,
   drawGroups,
   drawDirectKnockout,
@@ -704,7 +705,7 @@ function BracketColumn({
         {matches.map((m) => (
           <MatchCard key={m.id} match={m} teams={teams} players={players} />
         ))}
-        {champion && matches[0] && getMatchWinner(matches[0]) && (
+        {champion && matches.length > 0 && getTieWinner(matches) && (
           <Card className="border-primary/40 bg-primary/10 p-4 text-center shadow-[var(--shadow-neon)]">
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>

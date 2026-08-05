@@ -29,6 +29,7 @@ import {
   useFcState,
   computeGroupStandings,
   getMatchWinner,
+  getTieWinner,
   formatMatchDate,
   isRegistrationOpen,
   GRUPOS,
@@ -424,7 +425,7 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
     );
   }
 
-  const champion = f[0] ? getMatchWinner(f[0]) : null;
+  const champion = f.length > 0 ? getTieWinner(f) : null;
 
   return (
     <div className="space-y-4">
