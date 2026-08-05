@@ -50,7 +50,7 @@ export const Route = createFileRoute("/t/$codigo")({
       { property: "og:title", content: `Torneio ${params.codigo} — FC Cup Arena` },
       {
         property: "og:description",
-        content: `Torneio EA Sports FC 26 — ${params.codigo}.`,
+        content: `Torneio e-Sports — ${params.codigo}.`,
       },
     ],
   }),
