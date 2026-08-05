@@ -78,14 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "FC Cup Arena — Torneios EA Sports FC 26" },
+      { title: "FC Cup Arena — Torneios e-Sports" },
       {
         name: "description",
         content:
-          "Plataforma de torneios EA Sports FC 26 no formato Copa do Mundo: fase de grupos, mata-mata e inscrição por gamertag.",
+          "Plataforma de torneios e-Sports no formato Copa do Mundo: fase de grupos, mata-mata e inscrição por gamertag.",
       },
       { name: "author", content: "FC Cup Arena" },
-      { property: "og:title", content: "FC Cup Arena — Torneios EA Sports FC 26" },
+      { property: "og:title", content: "FC Cup Arena — Torneios e-Sports" },
       {
         property: "og:description",
         content:
