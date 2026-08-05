@@ -246,6 +246,51 @@
       ]
     },
     {
+      "id": "brasileirao",
+      "nome": "Brasileirão",
+      "descricao": "Clubes das principais divisões do Brasil",
+      "grupos": [
+        {
+          "nome": "Série A",
+          "times": [
+            { "nome": "Flamengo", "escudo": "https://escudosfc.com.br/images/fla.png" },
+            { "nome": "Palmeiras", "escudo": "https://upload.wikimedia.org/wikipedia/commons/6/60/SE_Palmeiras_2025_crest.png?utm_source=pt.wikipedia.org&utm_campaign=index&utm_content=thumbnail_unscaled" },
+            { "nome": "Corinthians", "escudo": "https://escudosfc.com.br/images/Corinthians.png" },
+            { "nome": "São Paulo", "escudo": "https://escudosfc.com.br/images/saopaulo.png" },
+            { "nome": "Santos", "escudo": "https://escudosfc.com.br/images/santos.png" },
+            { "nome": "Grêmio", "escudo": "https://escudosfc.com.br/images/gremio.png" },
+            { "nome": "Internacional", "escudo": "https://escudosfc.com.br/images/interrs.png" },
+            { "nome": "Atlético-MG", "escudo": "https://escudosfc.com.br/images/atletico.png" },
+            { "nome": "Cruzeiro", "escudo": "https://escudosfc.com.br/images/cruzeiro.png" },
+            { "nome": "Fluminense", "escudo": "https://escudosfc.com.br/images/fluminense.png" },
+            { "nome": "Botafogo", "escudo": "https://escudosfc.com.br/images/botafogo.gif" },
+            { "nome": "Vasco", "escudo": "https://escudosfc.com.br/images/vasco.png" },
+            { "nome": "Athletico-PR", "escudo": "https://escudosfc.com.br/images/atlpr.png" },
+            { "nome": "Bahia", "escudo": "https://escudosfc.com.br/images/bahia.png" },
+            { "nome": "Fortaleza", "escudo": "https://escudosfc.com.br/images/fortaleza.png" },
+            { "nome": "Red Bull Bragantino", "escudo": "https://escudosfc.com.br/images/bragantino.png" },
+            { "nome": "Cuiabá", "escudo": "https://media.api-sports.io/football/teams/79.png" },
+            { "nome": "Juventude", "escudo": "https://media.api-sports.io/football/teams/80.png" },
+            { "nome": "Criciúma", "escudo": "https://media.api-sports.io/football/teams/81.png" },
+            { "nome": "Atlético-GO", "escudo": "https://media.api-sports.io/football/teams/82.png" }
+          ]
+        },
+        {
+          "nome": "Série B",
+          "times": [
+            { "nome": "Coritiba", "escudo": "https://media.api-sports.io/football/teams/83.png" },
+            { "nome": "Goiás", "escudo": "https://media.api-sports.io/football/teams/84.png" },
+            { "nome": "Vitória", "escudo": "https://media.api-sports.io/football/teams/85.png" },
+            { "nome": "Chapecoense", "escudo": "https://media.api-sports.io/football/teams/86.png" },
+            { "nome": "Sport Recife", "escudo": "https://media.api-sports.io/football/teams/87.png" },
+            { "nome": "América-MG", "escudo": "https://media.api-sports.io/football/teams/88.png" },
+            { "nome": "CRB", "escudo": "https://media.api-sports.io/football/teams/89.png" },
+            { "nome": "Botafogo-SP", "escudo": "https://media.api-sports.io/football/teams/90.png" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "premier_league",
       "nome": "Premier League",
       "descricao": "Clubes da liga inglesa",
