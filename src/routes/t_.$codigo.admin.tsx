@@ -761,6 +761,11 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
       "rounded-lg border p-3",
       match.status === "pendente" ? "border-border bg-background/40" : "border-primary/30 bg-primary/5",
     ].join(" ")}>
+      {match.perna != null && (
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          {match.perna === 1 ? "Jogo de ida" : "Jogo de volta"}
+        </p>
+      )}
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
           <div className="flex min-w-0 flex-1 items-center gap-2">
