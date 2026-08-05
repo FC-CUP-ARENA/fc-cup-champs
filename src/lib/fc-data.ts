@@ -778,6 +778,24 @@ function allGroupsFinished(torneio_id: string): boolean {
 }
 
 function advanceBracketIfReady(torneio_id: string) {
+  if (isDirectKnockout(torneio_id)) {
+    const semis = tiesOfPhase(torneio_id, "semi");
+    const hasFinalD = state.matches.some(
+      (m) => m.torneio_id === torneio_id && m.fase === "final",
+    );
+    if (!hasFinalD && semis.length === 2 && semis.every((t) => winnerOfTie(t))) {
+      const fin = makeTie(
+        torneio_id,
+        "final",
+        0,
+        winnerOfTie(semis[0])!,
+        winnerOfTie(semis[1])!,
+      );
+      state = { ...state, matches: [...state.matches, ...fin] };
+    }
+    emit();
+    return;
+  }
   // Ensure QF exists once groups done
   const hasQF = state.matches.some((m) => m.torneio_id === torneio_id && m.fase === "quartas");
   if (!hasQF && allGroupsFinished(torneio_id)) {
