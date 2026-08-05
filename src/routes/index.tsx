@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getTournamentByCode, useFcState } from "@/lib/fc-data";
 import { formatTournamentCode } from "@/lib/code-utils";
+import logoUrl from '../assets/logo_fc-cup-arena.png'
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -41,8 +42,10 @@ function Home() {
       <header className="border-b border-border/60 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground shadow-[var(--shadow-neon)]">
-              <Trophy className="h-5 w-5" />
+            <div className="grid h-15 w-15 shrink-0 place-items-center">
+              <img src={logoUrl} 
+                className="drop-shadow-[0_0_3.5px_rgba(255,255,255,0.6)]"
+              />
             </div>
             <div className="min-w-0">
               <h1 className="truncate font-display text-lg font-black tracking-wider text-foreground">
@@ -62,7 +65,7 @@ function Home() {
       {/* Hero access */}
       <section className="mx-auto max-w-2xl px-4 pb-10 pt-14 text-center">
         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
-          <Zap className="h-3 w-3" /> Copa do Mundo · Grupos + Mata-Mata
+          <Zap className="h-3 w-3" /> Copa do Mundo · Libertadores · Grupos + Mata-Mata · E muito mais
         </div>
         <h2 className="text-4xl font-black leading-tight text-foreground sm:text-5xl">
           Entre na arena.<br />
