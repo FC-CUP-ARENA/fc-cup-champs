@@ -74,6 +74,7 @@
         {
           "nome": "África",
           "times": [
+            { "nome": "Cabo Verde", "escudo": "https://flagcdn.com/h40/cv.png" },
             { "nome": "Senegal", "escudo": "https://flagcdn.com/h40/sn.png" },
             { "nome": "Marrocos", "escudo": "https://flagcdn.com/h40/ma.png" },
             { "nome": "Nigéria", "escudo": "https://flagcdn.com/h40/ng.png" },
