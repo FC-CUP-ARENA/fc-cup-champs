@@ -51,7 +51,7 @@ function Home() {
               <h1 className="truncate font-display text-lg font-black tracking-wider text-foreground">
                 FC CUP ARENA
               </h1>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              <p className="text-[14px] uppercase tracking-[0.2em] text-muted-foreground">
                 e-Sports
               </p>
             </div>
