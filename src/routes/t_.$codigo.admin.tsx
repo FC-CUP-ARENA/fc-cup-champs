@@ -39,6 +39,7 @@ import {
   getMatchWinner,
   calcularIdade,
   drawGroups,
+  drawDirectKnockout,
   clearGroups,
   generateGroupMatches,
   setTeamGroup,
