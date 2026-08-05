@@ -51,22 +51,22 @@ export type Match = {
 const TOURNAMENT_ID = "t1";
 
 const teamsSeed: Array<{ nome: string; escudo: string }> = [
-  { nome: "Brasil", escudo: "🇧🇷" },
-  { nome: "Argentina", escudo: "🇦🇷" },
-  { nome: "França", escudo: "🇫🇷" },
-  { nome: "Alemanha", escudo: "🇩🇪" },
-  { nome: "Espanha", escudo: "🇪🇸" },
-  { nome: "Portugal", escudo: "🇵🇹" },
-  { nome: "Inglaterra", escudo: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  { nome: "Itália", escudo: "🇮🇹" },
-  { nome: "Real Madrid", escudo: "⚪" },
-  { nome: "Barcelona", escudo: "🔵" },
-  { nome: "Manchester City", escudo: "🩵" },
-  { nome: "Liverpool", escudo: "🔴" },
-  { nome: "Bayern Munich", escudo: "🅱️" },
-  { nome: "PSG", escudo: "🅿️" },
-  { nome: "Flamengo", escudo: "🔴⚫" },
-  { nome: "Palmeiras", escudo: "🟢" },
+  { nome: "Brasil", escudo: "https://flagcdn.com/h40/br.png" },
+  { nome: "Argentina", escudo: "https://flagcdn.com/h40/ar.png" },
+  { nome: "França", escudo: "https://flagcdn.com/h40/fr.png" },
+  { nome: "Alemanha", escudo: "https://flagcdn.com/h40/de.png" },
+  { nome: "Espanha", escudo: "https://flagcdn.com/h40/es.png" },
+  { nome: "Portugal", escudo: "https://flagcdn.com/h40/pt.png" },
+  { nome: "Inglaterra", escudo: "https://flagcdn.com/h40/gb-eng.png" },
+  { nome: "Itália", escudo: "https://flagcdn.com/h40/it.png" },
+  { nome: "Real Madrid", escudo: "https://media.api-sports.io/football/teams/541.png" },
+  { nome: "Barcelona", escudo: "https://media.api-sports.io/football/teams/529.png" },
+  { nome: "Manchester City", escudo: "https://media.api-sports.io/football/teams/50.png" },
+  { nome: "Liverpool", escudo: "https://media.api-sports.io/football/teams/40.png" },
+  { nome: "Bayern Munich", escudo: "https://media.api-sports.io/football/teams/157.png" },
+  { nome: "PSG", escudo: "https://media.api-sports.io/football/teams/85.png" },
+  { nome: "Flamengo", escudo: "https://media.api-sports.io/football/teams/834.png" },
+  { nome: "Palmeiras", escudo: "https://media.api-sports.io/football/teams/222.png" },
 ];
 
 const initialTournament: Tournament = {

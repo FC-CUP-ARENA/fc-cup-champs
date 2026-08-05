@@ -37,6 +37,7 @@ import {
   type Match,
   type Player,
 } from "@/lib/fc-data";
+import { TeamCrest } from "@/components/team-crest";
 
 export const Route = createFileRoute("/t/$codigo")({
   head: ({ params }) => ({
@@ -268,7 +269,7 @@ function ScoreRow({ match, teams, players }: { match: Match; teams: Map<string, 
       <div className="flex items-center justify-between gap-2">
         <span className={["flex min-w-0 flex-1 flex-col items-start gap-0.5", winner === a?.id ? "font-bold text-primary" : ""].join(" ")}>
           <span className="flex items-center gap-1.5">
-            <span className="text-lg">{a?.escudo_url}</span>
+            <TeamCrest src={a?.escudo_url ?? ""} alt={a?.nome ?? ""} size={22} />
             <span className="truncate">{pa?.gamertag_nick ?? a?.nome}</span>
           </span>
           {(pa || a) && (
@@ -286,7 +287,7 @@ function ScoreRow({ match, teams, players }: { match: Match; teams: Map<string, 
         <span className={["flex min-w-0 flex-1 flex-col items-end gap-0.5", winner === b?.id ? "font-bold text-primary" : ""].join(" ")}>
           <span className="flex items-center gap-1.5">
             <span className="truncate text-right">{pb?.gamertag_nick ?? b?.nome}</span>
-            <span className="text-lg">{b?.escudo_url}</span>
+            <TeamCrest src={b?.escudo_url ?? ""} alt={b?.nome ?? ""} size={22} />
           </span>
           {(pb || b) && (
             <span className="truncate pr-6 text-[10px] text-muted-foreground">{b?.nome}</span>
@@ -352,7 +353,7 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
                       <tr key={s.time_id} className={idx < 2 ? "bg-primary/5" : ""}>
                         <td className="py-1.5">
                           <div className="flex items-center gap-1">
-                            <span className="text-base">{t?.escudo_url}</span>
+                            <TeamCrest src={t?.escudo_url ?? ""} alt={t?.nome ?? ""} size={20} />
                             <div className="min-w-0">
                               <div className="truncate text-xs font-semibold">{p?.gamertag_nick ?? t?.nome}</div>
                               <div className="truncate text-[10px] text-muted-foreground">{t?.nome}</div>
@@ -420,7 +421,7 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
           <Trophy className="mx-auto h-7 w-7 text-primary" />
           <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>
           <p className="mt-1 font-display text-xl font-black">
-            {teamMap.get(champion)?.escudo_url} {playerByTeam.get(champion)?.gamertag_nick ?? teamMap.get(champion)?.nome}
+            <TeamCrest src={teamMap.get(champion)?.escudo_url ?? ""} alt={teamMap.get(champion)?.nome ?? ""} size={28} className="mr-1 inline-block align-middle" /> {playerByTeam.get(champion)?.gamertag_nick ?? teamMap.get(champion)?.nome}
           </p>
           <p className="text-xs text-muted-foreground">{teamMap.get(champion)?.nome}</p>
         </Card>
@@ -671,7 +672,9 @@ function RegistrationForm({
                       : "border-border bg-background/40 hover:border-primary/60 hover:bg-primary/5",
                 ].join(" ")}
               >
-                <div className="text-3xl leading-none">{team.escudo_url}</div>
+                <div className="grid h-16 w-16 shrink-0 place-items-center rounded-lg border border-border bg-background/40 p-1">
+                  <TeamCrest src={team.escudo_url} alt={team.nome} size={48} />
+                </div>
                 {team.ocupado && player ? (
                   <div className="min-w-0">
                     <div className="line-clamp-1 text-xs font-bold text-foreground">

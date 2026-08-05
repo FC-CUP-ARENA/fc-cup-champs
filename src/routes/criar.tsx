@@ -3,14 +3,11 @@ import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   Trophy,
-  Users,
   Check,
   Search,
   X,
   Globe,
-  Shield,
-  Calendar,
-  Lock,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,9 +27,14 @@ import {
 import {
   COMPETITIONS,
   type CatalogTeam,
-  type CompetitionGroup,
 } from "@/lib/team-catalog";
 import { createTournament } from "@/lib/fc-data";
+import {
+  formatTournamentCode,
+  formatMasterKey,
+  generateTournamentCode,
+  generateMasterKey,
+} from "@/lib/code-utils";
 
 export const Route = createFileRoute("/criar")({
   head: () => ({
@@ -66,12 +68,28 @@ const DEFAULT_REGULAMENTO = `REGULAMENTO DO TORNEIO
 5. CRITÉRIOS DE DESEMPATE
 - Pontos > Vitórias > Saldo de Gols > Gols Pró.`;
 
+function TeamCrest({ src, alt, size = 28 }: { src: string; alt: string; size?: number }) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      width={size}
+      height={size}
+      loading="lazy"
+      className="shrink-0 rounded-sm object-contain"
+      onError={(e) => {
+        (e.currentTarget as HTMLImageElement).style.display = "none";
+      }}
+    />
+  );
+}
+
 function CreateTournamentPage() {
   const navigate = useNavigate();
 
   const [nome, setNome] = useState("");
-  const [codigo, setCodigo] = useState("");
-  const [chave, setChave] = useState("");
+  const [codigo, setCodigo] = useState(() => generateTournamentCode());
+  const [chave, setChave] = useState(() => generateMasterKey());
   const [maxJogadores, setMaxJogadores] = useState("16");
   const [formato, setFormato] = useState<"jogo_unico" | "ida_e_volta">("jogo_unico");
   const [deadline, setDeadline] = useState("");
@@ -91,8 +109,8 @@ function CreateTournamentPage() {
   const selectedCount = selectedTeams.length;
   const canCreate =
     nome.trim() &&
-    codigo.trim() &&
-    chave.trim() &&
+    codigo.trim().length >= 6 &&
+    chave.trim().length >= 7 &&
     isMaxValid &&
     selectedCount === maxNum;
 
@@ -107,20 +125,6 @@ function CreateTournamentPage() {
       }
       setSelectedTeams([...selectedTeams, team]);
     }
-  };
-
-  const generateCode = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-    const seg = () =>
-      Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    setCodigo(`FC-${seg()}`);
-  };
-
-  const generateKey = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
-    const seg = () =>
-      Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    setChave(`ADM-${seg()}`);
   };
 
   const submit = (e: React.FormEvent) => {
@@ -218,34 +222,52 @@ function CreateTournamentPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="codigo">Código Único *</Label>
+                  <Label htmlFor="codigo">Código Único (gerado automaticamente)</Label>
                   <div className="mt-1.5 flex gap-2">
                     <Input
                       id="codigo"
                       value={codigo}
-                      onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+                      onChange={(e) => setCodigo(formatTournamentCode(e.target.value))}
                       placeholder="FC-XXXX"
                       className="font-mono"
+                      maxLength={7}
                     />
-                    <Button type="button" size="sm" variant="outline" onClick={generateCode}>
-                      Gerar
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setCodigo(generateTournamentCode())}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
                   </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Formato: FC-XXXX (gerado a partir de timestamp + hash)
+                  </p>
                 </div>
                 <div>
-                  <Label htmlFor="chave">Chave Mestra Admin *</Label>
+                  <Label htmlFor="chave">Chave Mestra Admin (gerada automaticamente)</Label>
                   <div className="mt-1.5 flex gap-2">
                     <Input
                       id="chave"
                       value={chave}
-                      onChange={(e) => setChave(e.target.value.toUpperCase())}
-                      placeholder="ADM-XXXXX"
+                      onChange={(e) => setChave(formatMasterKey(e.target.value))}
+                      placeholder="XXX-XXX"
                       className="font-mono"
+                      maxLength={7}
                     />
-                    <Button type="button" size="sm" variant="outline" onClick={generateKey}>
-                      Gerar
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setChave(generateMasterKey())}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
                   </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Formato: XXX-XXX (6 dígitos alfanuméricos)
+                  </p>
                 </div>
               </div>
 
@@ -388,7 +410,7 @@ function CreateTournamentPage() {
                                   : "border-border bg-background/40 hover:border-primary/50 hover:bg-primary/5",
                             ].join(" ")}
                           >
-                            <span className="text-2xl leading-none">{team.escudo}</span>
+                            <TeamCrest src={team.escudo} alt={team.nome} size={28} />
                             <span className="min-w-0 flex-1">
                               <span className="line-clamp-1 text-xs font-bold text-foreground">
                                 {team.nome}
@@ -432,7 +454,7 @@ function CreateTournamentPage() {
                     key={team.nome}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-semibold"
                   >
-                    <span className="text-lg leading-none">{team.escudo}</span>
+                    <TeamCrest src={team.escudo} alt={team.nome} size={20} />
                     {team.nome}
                     <button
                       type="button"
