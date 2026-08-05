@@ -738,7 +738,7 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
 
   const isKO = match.fase !== "grupos";
   const tied = gm !== "" && gv !== "" && Number(gm) === Number(gv);
-  const showPens = isKO && tied;
+  const showPens = isKO && tied && (match.perna == null || match.perna === 2);
 
   const mandante = teams.get(match.time_mandante_id);
   const visitante = teams.get(match.time_visitante_id);
