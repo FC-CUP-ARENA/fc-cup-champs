@@ -38,6 +38,10 @@ export type Match = {
   fase: "grupos" | "quartas" | "semi" | "final";
   grupo?: "A" | "B" | "C" | "D";
   ordem: number;
+  /** Identificador do confronto (usado para ida e volta). */
+  chave?: string;
+  /** 1 = jogo de ida, 2 = jogo de volta. */
+  perna?: 1 | 2;
   time_mandante_id: string;
   time_visitante_id: string;
   gols_mandante: number | null;
