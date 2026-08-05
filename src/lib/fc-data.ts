@@ -654,7 +654,21 @@ export function saveMatchScore(
   if (!match) return { ok: false, error: "Partida não encontrada." };
   const tied = gm === gv;
   const ko = isKnockoutPhase(match.fase);
-  if (ko && tied) {
+  const twoLeg = ko && match.perna != null && isTwoLegged(match.torneio_id);
+  let needsPen = ko && tied && !twoLeg;
+  if (twoLeg && match.perna === 2) {
+    const legs = state.matches.filter(
+      (m) => m.torneio_id === match.torneio_id && m.chave === match.chave,
+    );
+    const first = legs.find((m) => m.perna === 1);
+    if (first && first.status !== "pendente") {
+      // agregado: ida (mandante = visitante da volta)
+      const aggHome = gm + (first.gols_visitante ?? 0);
+      const aggAway = gv + (first.gols_mandante ?? 0);
+      needsPen = aggHome === aggAway;
+    }
+  }
+  if (needsPen) {
     if (pm == null || pv == null) return { ok: false, error: "Informe os pênaltis." };
     if (pm === pv) return { ok: false, error: "Pênaltis não podem empatar." };
   }
@@ -666,8 +680,8 @@ export function saveMatchScore(
             ...m,
             gols_mandante: gm,
             gols_visitante: gv,
-            penaltis_mandante: ko && tied ? pm ?? null : null,
-            penaltis_visitante: ko && tied ? pv ?? null : null,
+            penaltis_mandante: needsPen ? pm ?? null : null,
+            penaltis_visitante: needsPen ? pv ?? null : null,
             status: "concluido",
           }
         : m,
