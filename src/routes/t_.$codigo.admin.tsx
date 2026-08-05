@@ -36,9 +36,10 @@ import {
   saveMatchScore,
   launchWO,
   computeGroupStandings,
-  getMatchWinner,
+  getTieWinner,
   calcularIdade,
   drawGroups,
+  drawDirectKnockout,
   clearGroups,
   generateGroupMatches,
   setTeamGroup,
@@ -443,6 +444,10 @@ function GroupsPanel({
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const groupMatches = matches.filter((m) => m.fase === "grupos");
+  const directKO = tournament.max_jogadores <= 4;
+  if (directKO) {
+    return <DirectKnockoutManager tournament={tournament} teams={teams} matches={matches} />;
+  }
   return (
     <div className="space-y-6">
       <GroupManager tournament={tournament} teams={teams} />
@@ -519,6 +524,63 @@ function GroupsPanel({
 }
 
 /* ---- Group manager (sorteio / manual) ---- */
+function DirectKnockoutManager({
+  tournament, teams, matches,
+}: { tournament: Tournament; teams: Team[]; matches: Match[] }) {
+  const inscritos = teams.filter((t) => t.ocupado && t.ativo_pelo_admin);
+  const semis = matches.filter((m) => m.fase === "semi");
+  return (
+    <Card className="border-border bg-card p-5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-display text-sm font-bold uppercase tracking-widest text-primary">
+          Mata-Mata Direto
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              const res = drawDirectKnockout(tournament.id);
+              if (!res.ok) toast.error(res.error || "Erro");
+              else toast.success("Semifinais sorteadas");
+            }}
+            className="bg-primary text-primary-foreground hover:bg-primary-glow"
+          >
+            <Shuffle className="mr-1 h-3.5 w-3.5" /> Sortear semifinais
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => { clearGroups(tournament.id); toast.success("Chaveamento limpo"); }}
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Eraser className="mr-1 h-3.5 w-3.5" /> Limpar
+          </Button>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Com 4 times não há fase de grupos: o torneio começa direto nas semifinais, em{" "}
+        <strong className="text-foreground">
+          {tournament.formato_mata_mata === "ida_e_volta" ? "ida e volta" : "jogo único"}
+        </strong>
+        . Gerencie os placares na aba Mata-Mata.
+      </p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {inscritos.map((t) => (
+          <div key={t.id} className="flex items-center gap-2 rounded-lg border border-border bg-background/40 p-2.5">
+            <TeamCrest src={t.escudo_url} alt={t.nome} size={28} />
+            <span className="truncate text-sm font-bold">{t.nome}</span>
+          </div>
+        ))}
+      </div>
+      {semis.length === 0 && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Nenhum confronto gerado ainda. Clique em "Sortear semifinais".
+        </p>
+      )}
+    </Card>
+  );
+}
+
 function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
   const players = useFcState((s) => s.players.filter((p) => p.torneio_id === tournament.id));
   const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
@@ -604,18 +666,25 @@ function BracketPanel({
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
 
-  if (q.length === 0) {
+  const directKO = tournament.max_jogadores <= 4;
+  if (q.length === 0 && (!directKO || s.length === 0)) {
     return (
       <Card className="border-dashed border-border bg-card/50 p-10 text-center">
         <AlertTriangle className="mx-auto h-6 w-6 text-muted-foreground" />
-        <p className="mt-3 text-sm text-muted-foreground">Chave será gerada após todas as partidas da fase de grupos.</p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          {directKO
+            ? "Sorteie as semifinais na aba Grupos para iniciar o mata-mata."
+            : "Chave será gerada após todas as partidas da fase de grupos."}
+        </p>
       </Card>
     );
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <BracketColumn title="Quartas de Final" matches={q} teams={teamMap} players={playerByTeam} />
+    <div className={`grid gap-4 ${directKO ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
+      {!directKO && (
+        <BracketColumn title="Quartas de Final" matches={q} teams={teamMap} players={playerByTeam} />
+      )}
       <BracketColumn title="Semifinal" matches={s} teams={teamMap} players={playerByTeam} placeholder="Aguardando quartas" />
       <BracketColumn title="Final" matches={f} teams={teamMap} players={playerByTeam} placeholder="Aguardando semifinal" champion />
     </div>
@@ -635,14 +704,14 @@ function BracketColumn({
         {matches.map((m) => (
           <MatchCard key={m.id} match={m} teams={teams} players={players} />
         ))}
-        {champion && matches[0] && getMatchWinner(matches[0]) && (
+        {champion && matches.length > 0 && getTieWinner(matches) && (
           <Card className="border-primary/40 bg-primary/10 p-4 text-center shadow-[var(--shadow-neon)]">
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>
             <p className="mt-1 font-display text-lg font-black">
-              <TeamCrest src={teams.get(getMatchWinner(matches[0])!)?.escudo_url ?? ""} alt={teams.get(getMatchWinner(matches[0])!)?.nome ?? ""} size={28} className="mr-1 inline-block align-middle" /> {players.get(getMatchWinner(matches[0])!)?.gamertag_nick ?? teams.get(getMatchWinner(matches[0])!)?.nome}
+              <TeamCrest src={teams.get(getTieWinner(matches)!)?.escudo_url ?? ""} alt={teams.get(getTieWinner(matches)!)?.nome ?? ""} size={28} className="mr-1 inline-block align-middle" /> {players.get(getTieWinner(matches)!)?.gamertag_nick ?? teams.get(getTieWinner(matches)!)?.nome}
             </p>
-            <p className="text-xs text-muted-foreground">{teams.get(getMatchWinner(matches[0])!)?.nome}</p>
+            <p className="text-xs text-muted-foreground">{teams.get(getTieWinner(matches)!)?.nome}</p>
           </Card>
         )}
       </div>
@@ -669,7 +738,7 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
 
   const isKO = match.fase !== "grupos";
   const tied = gm !== "" && gv !== "" && Number(gm) === Number(gv);
-  const showPens = isKO && tied;
+  const showPens = isKO && tied && (match.perna == null || match.perna === 2);
 
   const mandante = teams.get(match.time_mandante_id);
   const visitante = teams.get(match.time_visitante_id);
@@ -692,6 +761,11 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
       "rounded-lg border p-3",
       match.status === "pendente" ? "border-border bg-background/40" : "border-primary/30 bg-primary/5",
     ].join(" ")}>
+      {match.perna != null && (
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          {match.perna === 1 ? "Jogo de ida" : "Jogo de volta"}
+        </p>
+      )}
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
           <div className="flex min-w-0 flex-1 items-center gap-2">

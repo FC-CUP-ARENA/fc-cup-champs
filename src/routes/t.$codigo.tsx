@@ -29,6 +29,7 @@ import {
   useFcState,
   computeGroupStandings,
   getMatchWinner,
+  getTieWinner,
   formatMatchDate,
   isRegistrationOpen,
   GRUPOS,
@@ -266,6 +267,11 @@ function ScoreRow({ match, teams, players }: { match: Match; teams: Map<string, 
         done ? "border-primary/30 bg-primary/5" : "border-border bg-background/40",
       ].join(" ")}
     >
+      {match.perna != null && (
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          {match.perna === 1 ? "Jogo de ida" : "Jogo de volta"}
+        </p>
+      )}
       <div className="flex items-center justify-between gap-2">
         <span className={["flex min-w-0 flex-1 flex-col items-start gap-0.5", winner === a?.id ? "font-bold text-primary" : ""].join(" ")}>
           <span className="flex items-center gap-1.5">
@@ -313,6 +319,17 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const anyGroup = teams.some((t) => t.grupo);
+  const directKO = tournament.max_jogadores <= 4;
+
+  if (directKO) {
+    return (
+      <EmptyPanel
+        icon={<Swords className="h-6 w-6" />}
+        title="Torneio sem fase de grupos"
+        description={`Com apenas ${tournament.max_jogadores} times, o torneio é disputado direto no mata-mata (${tournament.formato_mata_mata === "ida_e_volta" ? "ida e volta" : "jogo único"}). Veja a aba Mata-Mata.`}
+      />
+    );
+  }
 
   if (!anyGroup) {
     return (
@@ -401,18 +418,19 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
+  const directKO = tournament.max_jogadores <= 4;
 
-  if (q.length === 0) {
+  if (q.length === 0 && (!directKO || s.length === 0)) {
     return (
       <EmptyPanel
         icon={<Swords className="h-6 w-6" />}
         title="Mata-mata bloqueado"
-        description={`Formato: ${tournament.formato_mata_mata === "ida_e_volta" ? "Ida e Volta" : "Jogo Único"}. Disponível após o encerramento da fase de grupos.`}
+        description={`Formato: ${tournament.formato_mata_mata === "ida_e_volta" ? "Ida e Volta" : "Jogo Único"}. ${directKO ? "Aguardando o sorteio das semifinais pelo organizador." : "Disponível após o encerramento da fase de grupos."}`}
       />
     );
   }
 
-  const champion = f[0] ? getMatchWinner(f[0]) : null;
+  const champion = f.length > 0 ? getTieWinner(f) : null;
 
   return (
     <div className="space-y-4">
@@ -426,12 +444,18 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
           <p className="text-xs text-muted-foreground">{teamMap.get(champion)?.nome}</p>
         </Card>
       )}
-      <div className="grid gap-4 md:grid-cols-3">
-        {([
-          ["Quartas de Final", q, ""],
-          ["Semifinal", s, "Aguardando quartas"],
-          ["Final", f, "Aguardando semifinal"],
-        ] as const).map(([title, list, placeholder]) => (
+      <div className={`grid gap-4 ${directKO ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
+        {(directKO
+          ? ([
+              ["Semifinal", s, ""],
+              ["Final", f, "Aguardando semifinais"],
+            ] as const)
+          : ([
+              ["Quartas de Final", q, ""],
+              ["Semifinal", s, "Aguardando quartas"],
+              ["Final", f, "Aguardando semifinal"],
+            ] as const)
+        ).map(([title, list, placeholder]) => (
           <div key={title}>
             <h3 className="mb-2 font-display text-sm font-bold uppercase tracking-widest text-primary">{title}</h3>
             <div className="space-y-2">
