@@ -1,17 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  Check,
-  Copy,
-  Trophy,
-  Users,
-  Lock,
-  BookOpen,
-  LayoutGrid,
-  Swords,
-  UserPlus,
-} from "lucide-react";
+import { ArrowLeft, Check, Copy, Trophy, Users, Lock, BookOpen, LayoutGrid, Swords, UserPlus, Calendar, TriangleAlert as AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -40,10 +29,13 @@ import {
   useFcState,
   computeGroupStandings,
   getMatchWinner,
+  formatMatchDate,
+  isRegistrationOpen,
   GRUPOS,
   type Team,
   type Tournament,
   type Match,
+  type Player,
 } from "@/lib/fc-data";
 
 export const Route = createFileRoute("/t/$codigo")({
@@ -259,34 +251,53 @@ function EmptyPanel({
 
 /* ------------------------ Public groups & bracket ------------------------ */
 
-function ScoreRow({ match, teams }: { match: Match; teams: Map<string, Team> }) {
+function ScoreRow({ match, teams, players }: { match: Match; teams: Map<string, Team>; players: Map<string, Player> }) {
   const a = teams.get(match.time_mandante_id);
   const b = teams.get(match.time_visitante_id);
+  const pa = a ? players.get(a.id) : undefined;
+  const pb = b ? players.get(b.id) : undefined;
   const done = match.status !== "pendente";
   const winner = getMatchWinner(match);
   return (
     <div
       className={[
-        "flex items-center justify-between gap-2 rounded-lg border p-2.5 text-sm",
+        "rounded-lg border p-2.5 text-sm",
         done ? "border-primary/30 bg-primary/5" : "border-border bg-background/40",
       ].join(" ")}
     >
-      <span className={["flex min-w-0 flex-1 items-center gap-1.5", winner === a?.id ? "font-bold text-primary" : ""].join(" ")}>
-        <span className="text-lg">{a?.escudo_url}</span>
-        <span className="truncate">{a?.nome}</span>
-      </span>
-      <span className="shrink-0 font-mono text-sm font-bold">
-        {done ? `${match.gols_mandante ?? 0} x ${match.gols_visitante ?? 0}` : "— x —"}
-        {match.penaltis_mandante != null && match.penaltis_visitante != null && (
-          <span className="ml-1 text-[10px] text-muted-foreground">
-            ({match.penaltis_mandante}-{match.penaltis_visitante} pên.)
+      <div className="flex items-center justify-between gap-2">
+        <span className={["flex min-w-0 flex-1 flex-col items-start gap-0.5", winner === a?.id ? "font-bold text-primary" : ""].join(" ")}>
+          <span className="flex items-center gap-1.5">
+            <span className="text-lg">{a?.escudo_url}</span>
+            <span className="truncate">{pa?.gamertag_nick ?? a?.nome}</span>
           </span>
-        )}
-      </span>
-      <span className={["flex min-w-0 flex-1 items-center justify-end gap-1.5", winner === b?.id ? "font-bold text-primary" : ""].join(" ")}>
-        <span className="truncate text-right">{b?.nome}</span>
-        <span className="text-lg">{b?.escudo_url}</span>
-      </span>
+          {(pa || a) && (
+            <span className="truncate pl-6 text-[10px] text-muted-foreground">{a?.nome}</span>
+          )}
+        </span>
+        <span className="shrink-0 font-mono text-sm font-bold">
+          {done ? `${match.gols_mandante ?? 0} x ${match.gols_visitante ?? 0}` : "— x —"}
+          {match.penaltis_mandante != null && match.penaltis_visitante != null && (
+            <span className="ml-1 text-[10px] text-muted-foreground">
+              ({match.penaltis_mandante}-{match.penaltis_visitante} pên.)
+            </span>
+          )}
+        </span>
+        <span className={["flex min-w-0 flex-1 flex-col items-end gap-0.5", winner === b?.id ? "font-bold text-primary" : ""].join(" ")}>
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-right">{pb?.gamertag_nick ?? b?.nome}</span>
+            <span className="text-lg">{b?.escudo_url}</span>
+          </span>
+          {(pb || b) && (
+            <span className="truncate pr-6 text-[10px] text-muted-foreground">{b?.nome}</span>
+          )}
+        </span>
+      </div>
+      {match.data_jogo && (
+        <div className="mt-1.5 flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+          <Calendar className="h-3 w-3" /> {formatMatchDate(match.data_jogo)}
+        </div>
+      )}
     </div>
   );
 }
@@ -295,7 +306,11 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
   const matches = useFcState((s) =>
     s.matches.filter((m) => m.torneio_id === tournament.id && m.fase === "grupos"),
   );
+  const players = useFcState((s) =>
+    s.players.filter((p) => p.torneio_id === tournament.id),
+  );
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const anyGroup = teams.some((t) => t.grupo);
 
   if (!anyGroup) {
@@ -332,11 +347,17 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
                 <tbody>
                   {standings.map((s, idx) => {
                     const t = teamMap.get(s.time_id);
+                    const p = t ? playerByTeam.get(t.id) : undefined;
                     return (
                       <tr key={s.time_id} className={idx < 2 ? "bg-primary/5" : ""}>
-                        <td className="truncate py-1.5">
-                          <span className="mr-1">{t?.escudo_url}</span>
-                          <span className="text-xs font-semibold">{t?.nome}</span>
+                        <td className="py-1.5">
+                          <div className="flex items-center gap-1">
+                            <span className="text-base">{t?.escudo_url}</span>
+                            <div className="min-w-0">
+                              <div className="truncate text-xs font-semibold">{p?.gamertag_nick ?? t?.nome}</div>
+                              <div className="truncate text-[10px] text-muted-foreground">{t?.nome}</div>
+                            </div>
+                          </div>
                         </td>
                         <td className="py-1.5 text-right font-bold">{s.P}</td>
                         <td className="py-1.5 text-right">{s.J}</td>
@@ -356,7 +377,7 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
               <div className="mt-4 space-y-2">
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Resultados</p>
                 {gm.map((m) => (
-                  <ScoreRow key={m.id} match={m} teams={teamMap} />
+                  <ScoreRow key={m.id} match={m} teams={teamMap} players={playerByTeam} />
                 ))}
               </div>
             )}
@@ -371,7 +392,11 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
   const matches = useFcState((s) =>
     s.matches.filter((m) => m.torneio_id === tournament.id && m.fase !== "grupos"),
   );
+  const players = useFcState((s) =>
+    s.players.filter((p) => p.torneio_id === tournament.id),
+  );
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
@@ -395,8 +420,9 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
           <Trophy className="mx-auto h-7 w-7 text-primary" />
           <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>
           <p className="mt-1 font-display text-xl font-black">
-            {teamMap.get(champion)?.escudo_url} {teamMap.get(champion)?.nome}
+            {teamMap.get(champion)?.escudo_url} {playerByTeam.get(champion)?.gamertag_nick ?? teamMap.get(champion)?.nome}
           </p>
+          <p className="text-xs text-muted-foreground">{teamMap.get(champion)?.nome}</p>
         </Card>
       )}
       <div className="grid gap-4 md:grid-cols-3">
@@ -414,7 +440,7 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
                 </div>
               )}
               {list.map((m) => (
-                <ScoreRow key={m.id} match={m} teams={teamMap} />
+                <ScoreRow key={m.id} match={m} teams={teamMap} players={playerByTeam} />
               ))}
             </div>
           </div>
@@ -455,6 +481,25 @@ function RegistrationForm({
     () => teams.filter((t) => t.ativo_pelo_admin),
     [teams],
   );
+
+  const players = useFcState((s) =>
+    s.players.filter((p) => p.torneio_id === tournament.id),
+  );
+  const playerByTeam = useMemo(
+    () => new Map(players.map((p) => [p.time_id, p])),
+    [players],
+  );
+
+  const regStatus = useMemo(() => isRegistrationOpen(tournament), [tournament]);
+  const freeTeams = activeTeams.filter((t) => !t.ocupado);
+  const noTeams = freeTeams.length === 0;
+  const locked = !regStatus.open || noTeams;
+
+  const lockReason = !regStatus.open
+    ? regStatus.reason
+    : noTeams
+      ? "Não há mais times disponíveis para inscrição."
+      : null;
 
   const formatPhone = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 11);
@@ -511,6 +556,18 @@ function RegistrationForm({
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      {locked && lockReason && (
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          <div>
+            <p className="font-display text-sm font-bold uppercase tracking-widest text-destructive">
+              Inscrições indisponíveis
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{lockReason}</p>
+          </div>
+        </div>
+      )}
+
       <Card className="border-border bg-card p-5">
         <h3 className="mb-4 font-display text-sm font-bold uppercase tracking-widest text-primary">
           Seus dados
@@ -525,6 +582,7 @@ function RegistrationForm({
               onChange={(e) => setNome(e.target.value)}
               placeholder="Ex: João da Silva"
               className="mt-1.5"
+              disabled={locked}
             />
           </div>
 
@@ -536,13 +594,14 @@ function RegistrationForm({
               onChange={(e) => setNick(e.target.value)}
               placeholder="PSN / Xbox Live / EA ID"
               className="mt-1.5 font-mono"
+              disabled={locked}
             />
           </div>
 
           <div>
             <Label>Mês / Ano de nascimento *</Label>
             <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <Select value={mes} onValueChange={setMes}>
+              <Select value={mes} onValueChange={setMes} disabled={locked}>
                 <SelectTrigger>
                   <SelectValue placeholder="Mês" />
                 </SelectTrigger>
@@ -552,7 +611,7 @@ function RegistrationForm({
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={ano} onValueChange={setAno}>
+              <Select value={ano} onValueChange={setAno} disabled={locked}>
                 <SelectTrigger>
                   <SelectValue placeholder="Ano" />
                 </SelectTrigger>
@@ -576,6 +635,7 @@ function RegistrationForm({
               placeholder="+55 (00) 00000-0000"
               className="mt-1.5 font-mono"
               inputMode="tel"
+              disabled={locked}
             />
           </div>
         </div>
@@ -587,14 +647,15 @@ function RegistrationForm({
             Escolha seu time
           </h3>
           <span className="text-xs text-muted-foreground">
-            {activeTeams.filter((t) => !t.ocupado).length} livres
+            {freeTeams.length} livres
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
           {activeTeams.map((team) => {
-            const disabled = team.ocupado;
+            const disabled = team.ocupado || locked;
             const selected = timeId === team.id;
+            const player = playerByTeam.get(team.id);
             return (
               <button
                 key={team.id}
@@ -602,7 +663,7 @@ function RegistrationForm({
                 disabled={disabled}
                 onClick={() => setTimeId(team.id)}
                 className={[
-                  "group relative flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition",
+                  "group relative flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition",
                   disabled
                     ? "cursor-not-allowed border-border bg-muted/40 opacity-50 grayscale"
                     : selected
@@ -611,10 +672,21 @@ function RegistrationForm({
                 ].join(" ")}
               >
                 <div className="text-3xl leading-none">{team.escudo_url}</div>
-                <div className="min-w-0 text-xs font-bold text-foreground">
-                  <span className="line-clamp-2">{team.nome}</span>
-                </div>
-                {disabled && (
+                {team.ocupado && player ? (
+                  <div className="min-w-0">
+                    <div className="line-clamp-1 text-xs font-bold text-foreground">
+                      {player.gamertag_nick}
+                    </div>
+                    <div className="line-clamp-1 text-[10px] text-muted-foreground">
+                      {team.nome}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="min-w-0 text-xs font-bold text-foreground">
+                    <span className="line-clamp-2">{team.nome}</span>
+                  </div>
+                )}
+                {team.ocupado && (
                   <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-destructive/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-destructive">
                     <Lock className="h-2.5 w-2.5" /> Indisponível
                   </span>
@@ -633,6 +705,7 @@ function RegistrationForm({
       <Button
         type="submit"
         className="h-12 w-full bg-primary text-base font-bold text-primary-foreground shadow-[var(--shadow-neon)] hover:bg-primary-glow"
+        disabled={locked}
       >
         Confirmar inscrição
       </Button>

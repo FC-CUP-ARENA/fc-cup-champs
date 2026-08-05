@@ -9,6 +9,7 @@ export type Tournament = {
   max_jogadores: number;
   formato_mata_mata: "jogo_unico" | "ida_e_volta";
   status: "inscricoes_abertas" | "em_andamento" | "finalizado";
+  data_limite_inscricoes?: string | null;
 };
 
 export type Team = {
@@ -44,6 +45,7 @@ export type Match = {
   penaltis_mandante: number | null;
   penaltis_visitante: number | null;
   status: "pendente" | "concluido" | "wo";
+  data_jogo?: string | null;
 };
 
 const TOURNAMENT_ID = "t1";
@@ -77,6 +79,7 @@ const initialTournament: Tournament = {
   max_jogadores: 16,
   formato_mata_mata: "jogo_unico",
   status: "em_andamento",
+  data_limite_inscricoes: null,
 };
 
 const initialTeams: Team[] = teamsSeed.map((t, i) => ({
@@ -245,6 +248,92 @@ export function registerPlayer(input: {
 function setState(next: State) {
   state = next;
   emit();
+}
+
+export type CreateTournamentInput = {
+  nome: string;
+  codigo_unico: string;
+  chave_mestra_admin: string;
+  regulamento_texto: string;
+  max_jogadores: number;
+  formato_mata_mata: "jogo_unico" | "ida_e_volta";
+  data_limite_inscricoes?: string | null;
+  teams: Array<{ nome: string; escudo_url: string }>;
+};
+
+export type CreateTournamentResult =
+  | { ok: true; tournament: Tournament }
+  | { ok: false; error: string };
+
+export function createTournament(input: CreateTournamentInput): CreateTournamentResult {
+  if (!input.nome.trim()) return { ok: false, error: "Informe o nome do torneio." };
+  if (!input.codigo_unico.trim()) return { ok: false, error: "Informe um código único." };
+  if (!input.chave_mestra_admin.trim()) return { ok: false, error: "Informe a chave mestra." };
+  if (input.max_jogadores < 4 || input.max_jogadores % 2 !== 0) {
+    return { ok: false, error: "O número de times deve ser par e no mínimo 4." };
+  }
+  if (input.teams.length !== input.max_jogadores) {
+    return { ok: false, error: `Selecione exatamente ${input.max_jogadores} times.` };
+  }
+  const exists = state.tournaments.some(
+    (t) => t.codigo_unico.toLowerCase() === input.codigo_unico.toLowerCase(),
+  );
+  if (exists) return { ok: false, error: "Já existe um torneio com este código." };
+
+  const id = `t-${Date.now()}`;
+  const tournament: Tournament = {
+    id,
+    nome: input.nome.trim(),
+    codigo_unico: input.codigo_unico.trim().toUpperCase(),
+    chave_mestra_admin: input.chave_mestra_admin.trim().toUpperCase(),
+    regulamento_texto: input.regulamento_texto,
+    max_jogadores: input.max_jogadores,
+    formato_mata_mata: input.formato_mata_mata,
+    status: "inscricoes_abertas",
+    data_limite_inscricoes: input.data_limite_inscricoes ?? null,
+  };
+  const teams: Team[] = input.teams.map((t, i) => ({
+    id: `${id}-team-${i + 1}`,
+    torneio_id: id,
+    nome: t.nome,
+    escudo_url: t.escudo_url,
+    ativo_pelo_admin: true,
+    ocupado: false,
+    grupo: null,
+  }));
+  setState({
+    ...state,
+    tournaments: [...state.tournaments, tournament],
+    teams: [...state.teams, ...teams],
+    players: [...state.players],
+    matches: [...state.matches],
+  });
+  return { ok: true, tournament };
+}
+
+export function setRegistrationDeadline(id: string, data_limite: string | null) {
+  setState({
+    ...state,
+    tournaments: state.tournaments.map((t) =>
+      t.id === id ? { ...t, data_limite_inscricoes: data_limite } : t,
+    ),
+  });
+}
+
+export function isRegistrationOpen(tournament: Tournament): { open: boolean; reason?: string } {
+  if (tournament.status !== "inscricoes_abertas") {
+    return { open: false, reason: "As inscrições estão fechadas para este torneio." };
+  }
+  if (hasTournamentStarted(tournament.id)) {
+    return { open: false, reason: "O torneio já começou. Não é mais possível se inscrever." };
+  }
+  if (tournament.data_limite_inscricoes) {
+    const limite = new Date(tournament.data_limite_inscricoes);
+    if (!isNaN(limite.getTime()) && Date.now() > limite.getTime()) {
+      return { open: false, reason: "O prazo de inscrição encerrou-se." };
+    }
+  }
+  return { open: true };
 }
 
 export function setTournamentStatus(id: string, status: Tournament["status"]) {
@@ -607,6 +696,33 @@ function makeKO(
 
 export function getMatchWinner(m: Match) {
   return winnerOf(m);
+}
+
+export function hasTournamentStarted(torneio_id: string): boolean {
+  return state.matches.some(
+    (m) => m.torneio_id === torneio_id && (m.status === "concluido" || m.status === "wo"),
+  );
+}
+
+export function setMatchDate(matchId: string, data_jogo: string | null) {
+  setState({
+    ...state,
+    matches: state.matches.map((m) =>
+      m.id === matchId ? { ...m, data_jogo } : m,
+    ),
+  });
+}
+
+export function formatMatchDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function calcularIdade(mesAno: string): number | null {

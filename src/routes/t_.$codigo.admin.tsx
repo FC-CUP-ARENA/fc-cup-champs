@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Copy, KeyRound, Trash2, Bot, Save, AlertTriangle, Trophy, Shuffle, RefreshCw, Eraser } from "lucide-react";
+import { ArrowLeft, Copy, KeyRound, Trash2, Bot, Save, TriangleAlert as AlertTriangle, Trophy, Shuffle, RefreshCw, Eraser } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -36,13 +36,25 @@ import {
   clearGroups,
   generateGroupMatches,
   setTeamGroup,
+  setMatchDate,
+  hasTournamentStarted,
+  setRegistrationDeadline,
   GRUPOS,
   type Tournament,
   type Match,
   type Team,
+  type Player,
 } from "@/lib/fc-data";
 
 type Search = { key?: string };
+
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off * 60_000);
+  return local.toISOString().slice(0, 16);
+}
 
 export const Route = createFileRoute("/t_/$codigo/admin")({
   validateSearch: (s: Record<string, unknown>): Search => ({
@@ -205,24 +217,69 @@ function AdminInner({ tournament }: { tournament: Tournament }) {
 /* ---- Config ---- */
 function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
   const [reg, setReg] = useState(tournament.regulamento_texto);
+  const [deadline, setDeadline] = useState<string>(tournament.data_limite_inscricoes ?? "");
+  const started = useFcState((s) => hasTournamentStarted(tournament.id));
 
   return (
     <>
       <Card className="border-border bg-card p-5">
         <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-widest text-primary">Status do Torneio</h3>
         <div className="flex flex-wrap gap-2">
-          {(["inscricoes_abertas", "em_andamento", "finalizado"] as const).map((s) => (
-            <Button
-              key={s}
-              size="sm"
-              variant={tournament.status === s ? "default" : "outline"}
-              onClick={() => { setTournamentStatus(tournament.id, s); toast.success("Status atualizado"); }}
-              className={tournament.status === s ? "bg-primary text-primary-foreground hover:bg-primary-glow" : ""}
-            >
-              {s === "inscricoes_abertas" ? "Inscrições Abertas" : s === "em_andamento" ? "Em Andamento" : "Finalizado"}
-            </Button>
-          ))}
+          {(["inscricoes_abertas", "em_andamento", "finalizado"] as const).map((s) => {
+            const locked = s === "inscricoes_abertas" && started;
+            return (
+              <Button
+                key={s}
+                size="sm"
+                variant={tournament.status === s ? "default" : "outline"}
+                disabled={locked}
+                onClick={() => { setTournamentStatus(tournament.id, s); toast.success("Status atualizado"); }}
+                className={tournament.status === s ? "bg-primary text-primary-foreground hover:bg-primary-glow" : ""}
+                title={locked ? "Inscrições encerradas: o torneio já começou" : undefined}
+              >
+                {s === "inscricoes_abertas" ? "Inscrições Abertas" : s === "em_andamento" ? "Em Andamento" : "Finalizado"}
+              </Button>
+            );
+          })}
         </div>
+        {started && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Inscrições não podem mais ser reabertas: já existe pelo menos uma partida concluída ou de W.O.
+          </p>
+        )}
+      </Card>
+
+      <Card className="border-border bg-card p-5">
+        <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-widest text-primary">Data Limite de Inscrição</h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Defina até quando os jogadores podem se inscrever. Após essa data, o formulário público fica bloqueado.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            type="datetime-local"
+            value={deadline ? toLocalInput(deadline) : ""}
+            onChange={(e) => {
+              setDeadline(e.target.value);
+              setRegistrationDeadline(tournament.id, e.target.value ? new Date(e.target.value).toISOString() : null);
+            }}
+            className="h-9 max-w-xs text-sm"
+          />
+          {deadline && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => { setDeadline(""); setRegistrationDeadline(tournament.id, null); toast.success("Data limite removida"); }}
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              Remover data limite
+            </Button>
+          )}
+        </div>
+        {deadline && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Inscrições encerram em {new Date(deadline).toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short" })}.
+          </p>
+        )}
       </Card>
 
       <Card className="border-border bg-card p-5">
@@ -264,7 +321,7 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
 /* ---- Inscritos ---- */
 function InscritosPanel({
   tournament, teams, players,
-}: { tournament: Tournament; teams: Team[]; players: ReturnType<typeof useFcState<any>> }) {
+}: { tournament: Tournament; teams: Team[]; players: Player[] }) {
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   return (
     <Card className="border-border bg-card p-5">
@@ -294,7 +351,7 @@ function InscritosPanel({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {players.map((p: any) => {
+            {players.map((p) => {
               const team = teamMap.get(p.time_id);
               const idade = calcularIdade(p.mes_ano_nascimento);
               return (
@@ -304,10 +361,13 @@ function InscritosPanel({
                   <TableCell>{idade ?? "—"}</TableCell>
                   <TableCell className="font-mono text-xs">{p.celular || "—"}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <span className="text-lg">{team?.escudo_url}</span>
-                      <span className="text-xs">{team?.nome}</span>
-                    </span>
+                      <div className="min-w-0">
+                        <div className="truncate text-xs font-bold">{p.gamertag_nick}</div>
+                        <div className="truncate text-[10px] text-muted-foreground">{team?.nome}</div>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -335,7 +395,9 @@ function InscritosPanel({
 function GroupsPanel({
   tournament, teams, matches,
 }: { tournament: Tournament; teams: Team[]; matches: Match[] }) {
+  const players = useFcState((s) => s.players.filter((p) => p.torneio_id === tournament.id));
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const groupMatches = matches.filter((m) => m.fase === "grupos");
   return (
     <div className="space-y-6">
@@ -371,13 +433,19 @@ function GroupsPanel({
                 <TableBody>
                   {standings.map((s, idx) => {
                     const t = teamMap.get(s.time_id);
+                    const p = t ? playerByTeam.get(t.id) : undefined;
                     const classifica = idx < 2;
                     return (
                       <TableRow key={s.time_id} className={classifica ? "bg-primary/5" : ""}>
                         <TableCell className="font-medium">
-                          <span className="mr-1">{t?.escudo_url}</span>
-                          {t?.nome}
-                          {classifica && <Badge className="ml-2 bg-primary/20 text-primary hover:bg-primary/20">Classificado</Badge>}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-base">{t?.escudo_url}</span>
+                            <div className="min-w-0">
+                              <div className="truncate text-xs font-bold">{p?.gamertag_nick ?? t?.nome}</div>
+                              <div className="truncate text-[10px] text-muted-foreground">{t?.nome}</div>
+                            </div>
+                            {classifica && <Badge className="ml-1 bg-primary/20 text-primary hover:bg-primary/20">Classificado</Badge>}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-bold">{s.P}</TableCell>
                         <TableCell className="text-right">{s.J}</TableCell>
@@ -408,6 +476,8 @@ function GroupsPanel({
 
 /* ---- Group manager (sorteio / manual) ---- */
 function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
+  const players = useFcState((s) => s.players.filter((p) => p.torneio_id === tournament.id));
+  const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const inscritos = teams.filter((t) => t.ocupado && t.ativo_pelo_admin);
   return (
     <Card className="border-border bg-card p-5">
@@ -448,11 +518,16 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
         Gerar partidas recria a fase de grupos e apaga placares e o mata-mata atual.
       </p>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {inscritos.map((t) => (
+        {inscritos.map((t) => {
+          const p = playerByTeam.get(t.id);
+          return (
           <div key={t.id} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background/40 p-2.5">
             <div className="flex min-w-0 items-center gap-2">
               <span className="text-xl">{t.escudo_url}</span>
-              <span className="truncate text-sm font-bold">{t.nome}</span>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-bold">{p?.gamertag_nick ?? t.nome}</div>
+                <div className="truncate text-[10px] text-muted-foreground">{t.nome}</div>
+              </div>
             </div>
             <Select
               value={t.grupo ?? "none"}
@@ -467,7 +542,8 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
               </SelectContent>
             </Select>
           </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
@@ -477,7 +553,9 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
 function BracketPanel({
   tournament, teams, matches,
 }: { tournament: Tournament; teams: Team[]; matches: Match[] }) {
+  const players = useFcState((s) => s.players.filter((p) => p.torneio_id === tournament.id));
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
@@ -493,16 +571,16 @@ function BracketPanel({
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <BracketColumn title="Quartas de Final" matches={q} teams={teamMap} />
-      <BracketColumn title="Semifinal" matches={s} teams={teamMap} placeholder="Aguardando quartas" />
-      <BracketColumn title="Final" matches={f} teams={teamMap} placeholder="Aguardando semifinal" champion />
+      <BracketColumn title="Quartas de Final" matches={q} teams={teamMap} players={playerByTeam} />
+      <BracketColumn title="Semifinal" matches={s} teams={teamMap} players={playerByTeam} placeholder="Aguardando quartas" />
+      <BracketColumn title="Final" matches={f} teams={teamMap} players={playerByTeam} placeholder="Aguardando semifinal" champion />
     </div>
   );
 }
 
 function BracketColumn({
-  title, matches, teams, placeholder, champion,
-}: { title: string; matches: Match[]; teams: Map<string, Team>; placeholder?: string; champion?: boolean }) {
+  title, matches, teams, players, placeholder, champion,
+}: { title: string; matches: Match[]; teams: Map<string, Team>; players: Map<string, Player>; placeholder?: string; champion?: boolean }) {
   return (
     <div>
       <h3 className="mb-2 font-display text-sm font-bold uppercase tracking-widest text-primary">{title}</h3>
@@ -511,15 +589,16 @@ function BracketColumn({
           <div className="rounded-lg border border-dashed border-border bg-card/40 p-4 text-center text-xs text-muted-foreground">{placeholder}</div>
         )}
         {matches.map((m) => (
-          <MatchCard key={m.id} match={m} teams={teams} />
+          <MatchCard key={m.id} match={m} teams={teams} players={players} />
         ))}
         {champion && matches[0] && getMatchWinner(matches[0]) && (
           <Card className="border-primary/40 bg-primary/10 p-4 text-center shadow-[var(--shadow-neon)]">
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>
             <p className="mt-1 font-display text-lg font-black">
-              {teams.get(getMatchWinner(matches[0])!)?.escudo_url} {teams.get(getMatchWinner(matches[0])!)?.nome}
+              {teams.get(getMatchWinner(matches[0])!)?.escudo_url} {players.get(getMatchWinner(matches[0])!)?.gamertag_nick ?? teams.get(getMatchWinner(matches[0])!)?.nome}
             </p>
+            <p className="text-xs text-muted-foreground">{teams.get(getMatchWinner(matches[0])!)?.nome}</p>
           </Card>
         )}
       </div>
@@ -528,11 +607,12 @@ function BracketColumn({
 }
 
 /* ---- Match Card ---- */
-function MatchCard({ match, teams }: { match: Match; teams: Map<string, Team> }) {
+function MatchCard({ match, teams, players }: { match: Match; teams: Map<string, Team>; players?: Map<string, Player> }) {
   const [gm, setGm] = useState<string>(match.gols_mandante?.toString() ?? "");
   const [gv, setGv] = useState<string>(match.gols_visitante?.toString() ?? "");
   const [pm, setPm] = useState<string>(match.penaltis_mandante?.toString() ?? "");
   const [pv, setPv] = useState<string>(match.penaltis_visitante?.toString() ?? "");
+  const [data, setData] = useState<string>(match.data_jogo ?? "");
   const [woOpen, setWoOpen] = useState(false);
 
   useEffect(() => {
@@ -540,7 +620,8 @@ function MatchCard({ match, teams }: { match: Match; teams: Map<string, Team> })
     setGv(match.gols_visitante?.toString() ?? "");
     setPm(match.penaltis_mandante?.toString() ?? "");
     setPv(match.penaltis_visitante?.toString() ?? "");
-  }, [match.id, match.status]);
+    setData(match.data_jogo ?? "");
+  }, [match.id, match.status, match.data_jogo]);
 
   const isKO = match.fase !== "grupos";
   const tied = gm !== "" && gv !== "" && Number(gm) === Number(gv);
@@ -548,6 +629,8 @@ function MatchCard({ match, teams }: { match: Match; teams: Map<string, Team> })
 
   const mandante = teams.get(match.time_mandante_id);
   const visitante = teams.get(match.time_visitante_id);
+  const pa = mandante && players ? players.get(mandante.id) : undefined;
+  const pVis = visitante && players ? players.get(visitante.id) : undefined;
 
   const save = () => {
     if (gm === "" || gv === "") { toast.error("Preencha o placar"); return; }
@@ -566,18 +649,24 @@ function MatchCard({ match, teams }: { match: Match; teams: Map<string, Team> })
       match.status === "pendente" ? "border-border bg-background/40" : "border-primary/30 bg-primary/5",
     ].join(" ")}>
       <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="text-lg">{mandante?.escudo_url}</span>
-          <span className="truncate text-sm font-semibold">{mandante?.nome}</span>
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="text-lg">{mandante?.escudo_url}</span>
+            <span className="truncate text-sm font-semibold">{pa?.gamertag_nick ?? mandante?.nome}</span>
+          </div>
+          <span className="truncate pl-7 text-[10px] text-muted-foreground">{mandante?.nome}</span>
         </div>
         <div className="flex items-center gap-1">
           <Input value={gm} onChange={(e) => setGm(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
           <span className="text-xs text-muted-foreground">x</span>
           <Input value={gv} onChange={(e) => setGv(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
         </div>
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-          <span className="truncate text-right text-sm font-semibold">{visitante?.nome}</span>
-          <span className="text-lg">{visitante?.escudo_url}</span>
+        <div className="flex min-w-0 flex-1 flex-col items-end gap-0.5">
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+            <span className="truncate text-right text-sm font-semibold">{pVis?.gamertag_nick ?? visitante?.nome}</span>
+            <span className="text-lg">{visitante?.escudo_url}</span>
+          </div>
+          <span className="truncate pr-7 text-[10px] text-muted-foreground">{visitante?.nome}</span>
         </div>
       </div>
 
@@ -589,6 +678,19 @@ function MatchCard({ match, teams }: { match: Match; teams: Map<string, Team> })
           <Input value={pv} onChange={(e) => setPv(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
         </div>
       )}
+
+      <div className="mt-2 flex items-center gap-2">
+        <Label className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0">Data</Label>
+        <Input
+          type="datetime-local"
+          value={data ? toLocalInput(data) : ""}
+          onChange={(e) => {
+            setData(e.target.value);
+            setMatchDate(match.id, e.target.value ? new Date(e.target.value).toISOString() : null);
+          }}
+          className="h-7 flex-1 text-xs"
+        />
+      </div>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -614,10 +716,16 @@ function MatchCard({ match, teams }: { match: Match; teams: Map<string, Team> })
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => { launchWO(match.id, "mandante"); toast.success("W.O. registrado"); setWoOpen(false); }}>
-              {mandante?.nome} vence
+              <div className="text-left">
+                <div className="font-bold">{pa?.gamertag_nick ?? mandante?.nome}</div>
+                <div className="text-[10px] font-normal text-muted-foreground">{mandante?.nome}</div>
+              </div>
             </Button>
             <Button variant="outline" onClick={() => { launchWO(match.id, "visitante"); toast.success("W.O. registrado"); setWoOpen(false); }}>
-              {visitante?.nome} vence
+              <div className="text-left">
+                <div className="font-bold">{pVis?.gamertag_nick ?? visitante?.nome}</div>
+                <div className="text-[10px] font-normal text-muted-foreground">{visitante?.nome}</div>
+              </div>
             </Button>
           </div>
           <DialogFooter>

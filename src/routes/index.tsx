@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, Trophy, Users, Zap } from "lucide-react";
+import { ArrowRight, Trophy, Users, Zap, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -89,6 +89,12 @@ function Home() {
             Acessar <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </form>
+
+        <Button asChild variant="outline" className="mt-4 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
+          <Link to="/criar">
+            <Plus className="mr-1 h-4 w-4" /> Criar Torneio
+          </Link>
+        </Button>
       </section>
 
       {/* Torneios em destaque */}
