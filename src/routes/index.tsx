@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getTournamentByCode, useFcState } from "@/lib/fc-data";
+import { formatTournamentCode } from "@/lib/code-utils";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -78,9 +79,10 @@ function Home() {
         >
           <Input
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="Digite o código (ex: FC26-2026)"
+            onChange={(e) => setCode(formatTournamentCode(e.target.value))}
+            placeholder="Digite o código (ex: FC-XXXX)"
             className="h-12 border-border bg-card text-center font-mono text-base tracking-widest uppercase placeholder:normal-case placeholder:tracking-normal"
+            maxLength={7}
           />
           <Button
             type="submit"

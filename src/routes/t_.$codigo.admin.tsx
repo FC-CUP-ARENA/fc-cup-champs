@@ -45,6 +45,7 @@ import {
   type Team,
   type Player,
 } from "@/lib/fc-data";
+import { TeamCrest } from "@/components/team-crest";
 
 type Search = { key?: string };
 
@@ -303,7 +304,7 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
           {teams.map((t) => (
             <div key={t.id} className="flex items-center justify-between rounded-lg border border-border bg-background/40 p-3">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-2xl">{t.escudo_url}</span>
+                <TeamCrest src={t.escudo_url} alt={t.nome} size={32} />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-bold">{t.nome}</div>
                   {t.ocupado && <div className="text-[10px] uppercase tracking-widest text-destructive">Ocupado</div>}
@@ -362,7 +363,7 @@ function InscritosPanel({
                   <TableCell className="font-mono text-xs">{p.celular || "—"}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-lg">{team?.escudo_url}</span>
+                      <TeamCrest src={team?.escudo_url ?? ""} alt={team?.nome ?? ""} size={24} />
                       <div className="min-w-0">
                         <div className="truncate text-xs font-bold">{p.gamertag_nick}</div>
                         <div className="truncate text-[10px] text-muted-foreground">{team?.nome}</div>
@@ -439,7 +440,7 @@ function GroupsPanel({
                       <TableRow key={s.time_id} className={classifica ? "bg-primary/5" : ""}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-base">{t?.escudo_url}</span>
+                            <TeamCrest src={t?.escudo_url ?? ""} alt={t?.nome ?? ""} size={20} />
                             <div className="min-w-0">
                               <div className="truncate text-xs font-bold">{p?.gamertag_nick ?? t?.nome}</div>
                               <div className="truncate text-[10px] text-muted-foreground">{t?.nome}</div>
@@ -523,7 +524,7 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
           return (
           <div key={t.id} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background/40 p-2.5">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="text-xl">{t.escudo_url}</span>
+              <TeamCrest src={t.escudo_url} alt={t.nome} size={28} />
               <div className="min-w-0">
                 <div className="truncate text-sm font-bold">{p?.gamertag_nick ?? t.nome}</div>
                 <div className="truncate text-[10px] text-muted-foreground">{t.nome}</div>
@@ -596,7 +597,7 @@ function BracketColumn({
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>
             <p className="mt-1 font-display text-lg font-black">
-              {teams.get(getMatchWinner(matches[0])!)?.escudo_url} {players.get(getMatchWinner(matches[0])!)?.gamertag_nick ?? teams.get(getMatchWinner(matches[0])!)?.nome}
+              <TeamCrest src={teams.get(getMatchWinner(matches[0])!)?.escudo_url ?? ""} alt={teams.get(getMatchWinner(matches[0])!)?.nome ?? ""} size={28} className="mr-1 inline-block align-middle" /> {players.get(getMatchWinner(matches[0])!)?.gamertag_nick ?? teams.get(getMatchWinner(matches[0])!)?.nome}
             </p>
             <p className="text-xs text-muted-foreground">{teams.get(getMatchWinner(matches[0])!)?.nome}</p>
           </Card>
@@ -651,7 +652,7 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="text-lg">{mandante?.escudo_url}</span>
+            <TeamCrest src={mandante?.escudo_url ?? ""} alt={mandante?.nome ?? ""} size={24} />
             <span className="truncate text-sm font-semibold">{pa?.gamertag_nick ?? mandante?.nome}</span>
           </div>
           <span className="truncate pl-7 text-[10px] text-muted-foreground">{mandante?.nome}</span>
@@ -664,7 +665,7 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
         <div className="flex min-w-0 flex-1 flex-col items-end gap-0.5">
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
             <span className="truncate text-right text-sm font-semibold">{pVis?.gamertag_nick ?? visitante?.nome}</span>
-            <span className="text-lg">{visitante?.escudo_url}</span>
+            <TeamCrest src={visitante?.escudo_url ?? ""} alt={visitante?.nome ?? ""} size={24} />
           </div>
           <span className="truncate pr-7 text-[10px] text-muted-foreground">{visitante?.nome}</span>
         </div>
