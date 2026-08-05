@@ -438,8 +438,18 @@ export function setTeamGroup(teamId: string, grupo: Grupo | null) {
   });
 }
 
+/** Torneios com 4 times não têm fase de grupos: vão direto ao mata-mata. */
+export function isDirectKnockout(torneio_id: string): boolean {
+  const t = state.tournaments.find((x) => x.id === torneio_id);
+  return !!t && t.max_jogadores <= 4;
+}
+
 /** Sorteia aleatoriamente os times ocupados em 4 grupos. */
 export function drawGroups(torneio_id: string) {
+  if (isDirectKnockout(torneio_id)) {
+    drawDirectKnockout(torneio_id);
+    return;
+  }
   const pool = state.teams.filter(
     (t) => t.torneio_id === torneio_id && t.ativo_pelo_admin && t.ocupado,
   );
@@ -472,6 +482,7 @@ export function generateGroupMatches(torneio_id: string): {
   ok: boolean;
   error?: string;
 } {
+  if (isDirectKnockout(torneio_id)) return drawDirectKnockout(torneio_id);
   const matches: Match[] = [];
   let ordem = 0;
   let total = 0;
