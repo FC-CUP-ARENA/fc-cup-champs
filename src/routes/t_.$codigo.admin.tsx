@@ -226,6 +226,7 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
   const [reg, setReg] = useState(tournament.regulamento_texto);
   const [deadline, setDeadline] = useState<string>(tournament.data_limite_inscricoes ?? "");
   const started = useFcState((s) => hasTournamentStarted(tournament.id));
+  const navigate = useNavigate();
 
   return (
     <>
@@ -299,6 +300,42 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
         >
           <Save className="mr-1 h-3.5 w-3.5" /> Salvar regulamento
         </Button>
+      </Card>
+
+      <Card className="border-destructive/40 bg-destructive/5 p-5">
+        <h3 className="mb-2 font-display text-sm font-bold uppercase tracking-widest text-destructive">Zona de Perigo</h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Excluir o torneio remove definitivamente times, inscritos e partidas. Esta ação não pode ser desfeita.
+        </p>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="destructive">
+              <Trash2 className="mr-1 h-3.5 w-3.5" /> Excluir torneio
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir "{tournament.nome}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Todos os dados do torneio {tournament.codigo_unico} — times, inscritos e partidas — serão apagados
+                permanentemente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  deleteTournament(tournament.id);
+                  toast.success("Torneio excluído");
+                  navigate({ to: "/" });
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir definitivamente
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Card>
 
       <Card className="border-border bg-card p-5">
