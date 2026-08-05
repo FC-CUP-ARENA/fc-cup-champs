@@ -831,27 +831,6 @@ function advanceBracketIfReady(torneio_id: string) {
   emit();
 }
 
-function makeKO(
-  fase: "quartas" | "semi" | "final",
-  ordem: number,
-  mandante: string,
-  visitante: string,
-): Match {
-  return {
-    id: `m-${fase}-${ordem}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    torneio_id: TOURNAMENT_ID,
-    fase,
-    ordem,
-    time_mandante_id: mandante,
-    time_visitante_id: visitante,
-    gols_mandante: null,
-    gols_visitante: null,
-    penaltis_mandante: null,
-    penaltis_visitante: null,
-    status: "pendente",
-  };
-}
-
 export function getMatchWinner(m: Match) {
   return winnerOf(m);
 }
