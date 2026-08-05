@@ -381,7 +381,7 @@ function CreateTournamentPage() {
 
             {/* Teams grid by continent */}
             <div className="space-y-4">
-              {competition.continentes.map((cont) => {
+              {competition.grupos.map((cont) => {
                 const filtered = cont.times.filter((t) =>
                   t.nome.toLowerCase().includes(search.toLowerCase()),
                 );
