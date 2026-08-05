@@ -96,57 +96,50 @@
         {
           "nome": "Brasil",
           "times": [
-            { "nome": "Flamengo", "escudo": "https://media.api-sports.io/football/teams/834.png" },
+            { "nome": "Flamengo", "escudo": "https://escudosfc.com.br/images/fla.png" },
             { "nome": "Palmeiras", "escudo": "https://upload.wikimedia.org/wikipedia/commons/6/60/SE_Palmeiras_2025_crest.png" },
-            { "nome": "Corinthians", "escudo": "https://media.api-sports.io/football/teams/65.png" },
-            { "nome": "São Paulo", "escudo": "https://media.api-sports.io/football/teams/66.png" },
-            { "nome": "Santos", "escudo": "https://media.api-sports.io/football/teams/67.png" },
-            { "nome": "Grêmio", "escudo": "https://media.api-sports.io/football/teams/68.png" },
-            { "nome": "Internacional", "escudo": "https://media.api-sports.io/football/teams/69.png" },
-            { "nome": "Atlético-MG", "escudo": "https://media.api-sports.io/football/teams/70.png" },
-            { "nome": "Cruzeiro", "escudo": "https://media.api-sports.io/football/teams/71.png" },
-            { "nome": "Fluminense", "escudo": "https://media.api-sports.io/football/teams/72.png" },
-            { "nome": "Botafogo", "escudo": "https://media.api-sports.io/football/teams/73.png" },
-            { "nome": "Vasco", "escudo": "https://media.api-sports.io/football/teams/74.png" },
-            { "nome": "Athletico-PR", "escudo": "https://media.api-sports.io/football/teams/75.png" },
-            { "nome": "Bahia", "escudo": "https://media.api-sports.io/football/teams/76.png" },
-            { "nome": "Fortaleza", "escudo": "https://media.api-sports.io/football/teams/77.png" },
-            { "nome": "Red Bull Bragantino", "escudo": "https://media.api-sports.io/football/teams/78.png" }
+            { "nome": "Corinthians", "escudo": "https://escudosfc.com.br/images/Corinthians.png" },
+            { "nome": "São Paulo", "escudo": "https://escudosfc.com.br/images/saopaulo.png" },
+            { "nome": "Santos", "escudo": "https://escudosfc.com.br/images/santos.png" },
+            { "nome": "Grêmio", "escudo": "https://escudosfc.com.br/images/gremio.png" },
+            { "nome": "Internacional", "escudo": "https://escudosfc.com.br/images/interrs.png" },
+            { "nome": "Atlético-MG", "escudo": "https://escudosfc.com.br/images/atletico.png" },
+            { "nome": "Cruzeiro", "escudo": "https://escudosfc.com.br/images/cruzeiro.png" },
+            { "nome": "Fluminense", "escudo": "https://escudosfc.com.br/images/fluminense.png" },
+            { "nome": "Botafogo", "escudo": "https://escudosfc.com.br/images/botafogo.gif" },
+            { "nome": "Vasco", "escudo": "https://escudosfc.com.br/images/vasco.png" },
+            { "nome": "Athletico-PR", "escudo": "https://escudosfc.com.br/images/atlpr.png" },
+            { "nome": "Bahia", "escudo": "https://escudosfc.com.br/images/bahia.png" },
+            { "nome": "Fortaleza", "escudo": "https://escudosfc.com.br/images/fortaleza.png" },
+            { "nome": "Red Bull Bragantino", "escudo": "https://escudosfc.com.br/images/bragantino.png" }
           ]
         },
         {
           "nome": "Argentina",
           "times": [
             { "nome": "River Plate", "escudo": "https://media.api-sports.io/football/teams/435.png" },
-            { "nome": "Boca Juniors", "escudo": "https://media.api-sports.io/football/teams/437.png" },
-            { "nome": "Racing", "escudo": "https://media.api-sports.io/football/teams/434.png" },
-            { "nome": "Independiente", "escudo": "https://media.api-sports.io/football/teams/432.png" },
-            { "nome": "San Lorenzo", "escudo": "https://media.api-sports.io/football/teams/431.png" },
-            { "nome": "Estudiantes", "escudo": "https://media.api-sports.io/football/teams/436.png" },
-            { "nome": "Vélez Sarsfield", "escudo": "https://media.api-sports.io/football/teams/429.png" },
-            { "nome": "Rosario Central", "escudo": "https://media.api-sports.io/football/teams/427.png" }
+            { "nome": "Boca Juniors", "escudo": "https://escudosfc.com.br/images/bocc.png" },
+            { "nome": "Racing", "escudo": "https://escudosfc.com.br/images/racingc.png" },
+            { "nome": "Independiente", "escudo": "https://escudosfc.com.br/images/indepc.png" },
+            { "nome": "San Lorenzo", "escudo": "https://escudosfc.com.br/images/san_loc.png" },
+            { "nome": "Estudiantes", "escudo": "https://escudosfc.com.br/images/estudic.png" },
+            { "nome": "Vélez Sarsfield", "escudo": "https://escudosfc.com.br/images/velez.png" },
+            { "nome": "Rosario Central", "escudo": "https://escudosfc.com.br/images/rosarioc.png" }
           ]
         },
         {
           "nome": "Uruguai",
           "times": [
-            { "nome": "Peñarol", "escudo": "https://media.api-sports.io/football/teams/475.png" },
-            { "nome": "Nacional", "escudo": "https://media.api-sports.io/football/teams/474.png" },
-            { "nome": "Defensor Sporting", "escudo": "https://media.api-sports.io/football/teams/476.png" }
+            { "nome": "Peñarol", "escudo": "https://escudosfc.com.br/images/penarol.png" },
+            { "nome": "Nacional", "escudo": "https://escudosfc.com.br/images/naciouru.png" },
+            { "nome": "Defensor Sporting", "escudo": "https://escudosfc.com.br/images/defensor.jpg" }
           ]
         },
         {
           "nome": "Outros Sul-Americanos",
           "times": [
-            { "nome": "Colo-Colo", "escudo": "https://media.api-sports.io/football/teams/571.png" },
-            { "nome": "Universidad Católica", "escudo": "https://media.api-sports.io/football/teams/573.png" },
-            { "nome": "Olimpia", "escudo": "https://media.api-sports.io/football/teams/577.png" },
-            { "nome": "Atlético Nacional", "escudo": "https://media.api-sports.io/football/teams/449.png" },
-            { "nome": "Millonarios", "escudo": "https://media.api-sports.io/football/teams/448.png" },
-            { "nome": "Emelec", "escudo": "https://media.api-sports.io/football/teams/580.png" },
-            { "nome": "Barcelona SC", "escudo": "https://media.api-sports.io/football/teams/579.png" },
-            { "nome": "Liga de Quito", "escudo": "https://media.api-sports.io/football/teams/578.png" },
-            { "nome": "Caracas", "escudo": "https://media.api-sports.io/football/teams/582.png" }
+            { "nome": "Colo-Colo", "escudo": "https://escudosfc.com.br/images/colocolo.png" },
+            { "nome": "Universidad Católica", "escudo": "https://escudosfc.com.br/images/unicatolica.png" }
           ]
         }
       ]
@@ -263,22 +256,22 @@
         {
           "nome": "Série A",
           "times": [
-            { "nome": "Flamengo", "escudo": "https://media.api-sports.io/football/teams/834.png" },
+            { "nome": "Flamengo", "escudo": "https://escudosfc.com.br/images/fla.png" },
             { "nome": "Palmeiras", "escudo": "https://upload.wikimedia.org/wikipedia/commons/6/60/SE_Palmeiras_2025_crest.png" },
-            { "nome": "Corinthians", "escudo": "https://media.api-sports.io/football/teams/65.png" },
-            { "nome": "São Paulo", "escudo": "https://media.api-sports.io/football/teams/66.png" },
-            { "nome": "Santos", "escudo": "https://media.api-sports.io/football/teams/67.png" },
-            { "nome": "Grêmio", "escudo": "https://media.api-sports.io/football/teams/68.png" },
-            { "nome": "Internacional", "escudo": "https://media.api-sports.io/football/teams/69.png" },
-            { "nome": "Atlético-MG", "escudo": "https://media.api-sports.io/football/teams/70.png" },
-            { "nome": "Cruzeiro", "escudo": "https://media.api-sports.io/football/teams/71.png" },
-            { "nome": "Fluminense", "escudo": "https://media.api-sports.io/football/teams/72.png" },
-            { "nome": "Botafogo", "escudo": "https://media.api-sports.io/football/teams/73.png" },
-            { "nome": "Vasco", "escudo": "https://media.api-sports.io/football/teams/74.png" },
-            { "nome": "Athletico-PR", "escudo": "https://media.api-sports.io/football/teams/75.png" },
-            { "nome": "Bahia", "escudo": "https://media.api-sports.io/football/teams/76.png" },
-            { "nome": "Fortaleza", "escudo": "https://media.api-sports.io/football/teams/77.png" },
-            { "nome": "Red Bull Bragantino", "escudo": "https://media.api-sports.io/football/teams/78.png" },
+            { "nome": "Corinthians", "escudo": "https://escudosfc.com.br/images/Corinthians.png" },
+            { "nome": "São Paulo", "escudo": "https://escudosfc.com.br/images/saopaulo.png" },
+            { "nome": "Santos", "escudo": "https://escudosfc.com.br/images/santos.png" },
+            { "nome": "Grêmio", "escudo": "https://escudosfc.com.br/images/gremio.png" },
+            { "nome": "Internacional", "escudo": "https://escudosfc.com.br/images/interrs.png" },
+            { "nome": "Atlético-MG", "escudo": "https://escudosfc.com.br/images/atletico.png" },
+            { "nome": "Cruzeiro", "escudo": "https://escudosfc.com.br/images/cruzeiro.png" },
+            { "nome": "Fluminense", "escudo": "https://escudosfc.com.br/images/fluminense.png" },
+            { "nome": "Botafogo", "escudo": "https://escudosfc.com.br/images/botafogo.gif" },
+            { "nome": "Vasco", "escudo": "https://escudosfc.com.br/images/vasco.png" },
+            { "nome": "Athletico-PR", "escudo": "https://escudosfc.com.br/images/atlpr.png" },
+            { "nome": "Bahia", "escudo": "https://escudosfc.com.br/images/bahia.png" },
+            { "nome": "Fortaleza", "escudo": "https://escudosfc.com.br/images/fortaleza.png" },
+            { "nome": "Red Bull Bragantino", "escudo": "https://escudosfc.com.br/images/bragantino.png" },
             { "nome": "Cuiabá", "escudo": "https://media.api-sports.io/football/teams/79.png" },
             { "nome": "Juventude", "escudo": "https://media.api-sports.io/football/teams/80.png" },
             { "nome": "Criciúma", "escudo": "https://media.api-sports.io/football/teams/81.png" },
@@ -323,7 +316,7 @@
             { "nome": "Fulham", "escudo": "https://media.api-sports.io/football/teams/36.png" },
             { "nome": "Wolves", "escudo": "https://media.api-sports.io/football/teams/39.png" },
             { "nome": "Brentford", "escudo": "https://media.api-sports.io/football/teams/55.png" },
-            { "nome": "Nottingham Forest", "escudo": "https://media.api-sports.io/football/teams/65.png" },
+            { "nome": "Nottingham Forest", "escudo": "https://escudosfc.com.br/images/Corinthians.png" },
             { "nome": "Bournemouth", "escudo": "https://media.api-sports.io/football/teams/35.png" },
             { "nome": "Burnley", "escudo": "https://media.api-sports.io/football/teams/44.png" },
             { "nome": "Luton Town", "escudo": "https://media.api-sports.io/football/teams/41.png" },
@@ -433,14 +426,14 @@
             { "nome": "Nice", "escudo": "https://media.api-sports.io/football/teams/84.png" },
             { "nome": "Rennes", "escudo": "https://media.api-sports.io/football/teams/83.png" },
             { "nome": "Lens", "escudo": "https://media.api-sports.io/football/teams/82.png" },
-            { "nome": "Toulouse", "escudo": "https://media.api-sports.io/football/teams/78.png" },
-            { "nome": "Nantes", "escudo": "https://media.api-sports.io/football/teams/77.png" },
-            { "nome": "Reims", "escudo": "https://media.api-sports.io/football/teams/76.png" },
-            { "nome": "Strasbourg", "escudo": "https://media.api-sports.io/football/teams/75.png" },
-            { "nome": "Brest", "escudo": "https://media.api-sports.io/football/teams/74.png" },
-            { "nome": "Le Havre", "escudo": "https://media.api-sports.io/football/teams/73.png" },
-            { "nome": "Metz", "escudo": "https://media.api-sports.io/football/teams/72.png" },
-            { "nome": "Lorient", "escudo": "https://media.api-sports.io/football/teams/71.png" }
+            { "nome": "Toulouse", "escudo": "https://escudosfc.com.br/images/bragantino.png" },
+            { "nome": "Nantes", "escudo": "https://escudosfc.com.br/images/fortaleza.png" },
+            { "nome": "Reims", "escudo": "https://escudosfc.com.br/images/bahia.png" },
+            { "nome": "Strasbourg", "escudo": "https://escudosfc.com.br/images/atlpr.png" },
+            { "nome": "Brest", "escudo": "https://escudosfc.com.br/images/vasco.png" },
+            { "nome": "Le Havre", "escudo": "https://escudosfc.com.br/images/botafogo.gif" },
+            { "nome": "Metz", "escudo": "https://escudosfc.com.br/images/fluminense.png" },
+            { "nome": "Lorient", "escudo": "https://escudosfc.com.br/images/cruzeiro.png" }
           ]
         }
       ]
