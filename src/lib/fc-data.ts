@@ -66,7 +66,7 @@ const teamsSeed: Array<{ nome: string; escudo: string }> = [
   { nome: "Bayern Munich", escudo: "https://media.api-sports.io/football/teams/157.png" },
   { nome: "PSG", escudo: "https://media.api-sports.io/football/teams/85.png" },
   { nome: "Flamengo", escudo: "https://escudosfc.com.br/images/fla.png" },
-  { nome: "Palmeiras", escudo: "https://upload.wikimedia.org/wikipedia/commons/6/60/SE_Palmeiras_2025_crest.png" },
+  { nome: "Palmeiras", escudo: "https://static.wixstatic.com/media/29c778_207b3727…o/29c778_207b3727cd814aad8939151aea70d47f~mv2.png" },
 ];
 
 const initialTournament: Tournament = {
