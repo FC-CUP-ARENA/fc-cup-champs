@@ -804,33 +804,29 @@ function advanceBracketIfReady(torneio_id: string) {
     const C = computeGroupStandings(torneio_id, "C");
     const D = computeGroupStandings(torneio_id, "D");
     const qf: Match[] = [
-      makeKO("quartas", 0, A[0].time_id, B[1].time_id),
-      makeKO("quartas", 1, C[0].time_id, D[1].time_id),
-      makeKO("quartas", 2, B[0].time_id, A[1].time_id),
-      makeKO("quartas", 3, D[0].time_id, C[1].time_id),
+      ...makeTie(torneio_id, "quartas", 0, A[0].time_id, B[1].time_id),
+      ...makeTie(torneio_id, "quartas", 1, C[0].time_id, D[1].time_id),
+      ...makeTie(torneio_id, "quartas", 2, B[0].time_id, A[1].time_id),
+      ...makeTie(torneio_id, "quartas", 3, D[0].time_id, C[1].time_id),
     ];
     state = { ...state, matches: [...state.matches, ...qf] };
   }
   // SF
-  const qfMatches = state.matches
-    .filter((m) => m.torneio_id === torneio_id && m.fase === "quartas")
-    .sort((a, b) => a.ordem - b.ordem);
+  const qfTies = tiesOfPhase(torneio_id, "quartas");
   const hasSF = state.matches.some((m) => m.torneio_id === torneio_id && m.fase === "semi");
-  if (!hasSF && qfMatches.length === 4 && qfMatches.every((m) => winnerOf(m))) {
+  if (!hasSF && qfTies.length === 4 && qfTies.every((t) => winnerOfTie(t))) {
     const sf: Match[] = [
-      makeKO("semi", 0, winnerOf(qfMatches[0])!, winnerOf(qfMatches[1])!),
-      makeKO("semi", 1, winnerOf(qfMatches[2])!, winnerOf(qfMatches[3])!),
+      ...makeTie(torneio_id, "semi", 0, winnerOfTie(qfTies[0])!, winnerOfTie(qfTies[1])!),
+      ...makeTie(torneio_id, "semi", 1, winnerOfTie(qfTies[2])!, winnerOfTie(qfTies[3])!),
     ];
     state = { ...state, matches: [...state.matches, ...sf] };
   }
   // Final
-  const sfMatches = state.matches
-    .filter((m) => m.torneio_id === torneio_id && m.fase === "semi")
-    .sort((a, b) => a.ordem - b.ordem);
+  const sfTies = tiesOfPhase(torneio_id, "semi");
   const hasFinal = state.matches.some((m) => m.torneio_id === torneio_id && m.fase === "final");
-  if (!hasFinal && sfMatches.length === 2 && sfMatches.every((m) => winnerOf(m))) {
-    const fin = makeKO("final", 0, winnerOf(sfMatches[0])!, winnerOf(sfMatches[1])!);
-    state = { ...state, matches: [...state.matches, fin] };
+  if (!hasFinal && sfTies.length === 2 && sfTies.every((t) => winnerOfTie(t))) {
+    const fin = makeTie(torneio_id, "final", 0, winnerOfTie(sfTies[0])!, winnerOfTie(sfTies[1])!);
+    state = { ...state, matches: [...state.matches, ...fin] };
   }
   emit();
 }
