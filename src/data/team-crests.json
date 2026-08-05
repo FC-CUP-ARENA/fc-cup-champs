@@ -2,7 +2,7 @@
   "competitions": [
     {
       "id": "copa_do_mundo",
-      "nome": "Copa do Mundo",
+      "nome": "Copa do Mundo 2026",
       "descricao": "Seleções nacionais organizadas por continente",
       "grupos": [
         {
@@ -10,81 +10,77 @@
           "times": [
             { "nome": "Brasil", "escudo": "https://media.api-sports.io/football/teams/6.png" },
             { "nome": "Argentina", "escudo": "https://media.api-sports.io/football/teams/26.png" },
-            { "nome": "Uruguai", "escudo": "https://flagcdn.com/h40/uy.png" },
-            { "nome": "Colômbia", "escudo": "https://flagcdn.com/h40/co.png" },
-            { "nome": "Chile", "escudo": "https://flagcdn.com/h40/cl.png" },
-            { "nome": "Peru", "escudo": "https://flagcdn.com/h40/pe.png" },
-            { "nome": "Equador", "escudo": "https://flagcdn.com/h40/ec.png" },
-            { "nome": "Paraguai", "escudo": "https://flagcdn.com/h40/py.png" },
-            { "nome": "Venezuela", "escudo": "https://flagcdn.com/h40/ve.png" },
-            { "nome": "Bolívia", "escudo": "https://flagcdn.com/h40/bo.png" }
+            { "nome": "Uruguai", "escudo": "https://media.api-sports.io/football/teams/7.png" },
+            { "nome": "Colômbia", "escudo": "https://media.api-sports.io/football/teams/8.png" },
+            { "nome": "Equador", "escudo": "https://media.api-sports.io/football/teams/2382.png" },
+            { "nome": "Paraguai", "escudo": "https://media.api-sports.io/football/teams/2380.png" }
           ]
         },
         {
           "nome": "Europa",
           "times": [
-            { "nome": "França", "escudo": "https://flagcdn.com/h40/fr.png" },
-            { "nome": "Alemanha", "escudo": "https://flagcdn.com/h40/de.png" },
-            { "nome": "Espanha", "escudo": "https://flagcdn.com/h40/es.png" },
-            { "nome": "Portugal", "escudo": "https://flagcdn.com/h40/pt.png" },
-            { "nome": "Inglaterra", "escudo": "https://flagcdn.com/h40/gb-eng.png" },
-            { "nome": "Itália", "escudo": "https://flagcdn.com/h40/it.png" },
-            { "nome": "Holanda", "escudo": "https://flagcdn.com/h40/nl.png" },
-            { "nome": "Bélgica", "escudo": "https://flagcdn.com/h40/be.png" },
-            { "nome": "Croácia", "escudo": "https://flagcdn.com/h40/hr.png" },
-            { "nome": "Suíça", "escudo": "https://flagcdn.com/h40/ch.png" },
-            { "nome": "Dinamarca", "escudo": "https://flagcdn.com/h40/dk.png" },
-            { "nome": "Suécia", "escudo": "https://flagcdn.com/h40/se.png" },
-            { "nome": "Polônia", "escudo": "https://flagcdn.com/h40/pl.png" },
-            { "nome": "Áustria", "escudo": "https://flagcdn.com/h40/at.png" },
-            { "nome": "Sérvia", "escudo": "https://flagcdn.com/h40/rs.png" },
-            { "nome": "Ucrânia", "escudo": "https://flagcdn.com/h40/ua.png" },
-            { "nome": "Turquia", "escudo": "https://flagcdn.com/h40/tr.png" },
-            { "nome": "Noruega", "escudo": "https://flagcdn.com/h40/no.png" },
-            { "nome": "Escócia", "escudo": "https://flagcdn.com/h40/gb-sct.png" },
-            { "nome": "País de Gales", "escudo": "https://flagcdn.com/h40/gb-wls.png" }
+            { "nome": "Alemanha", "escudo": "https://media.api-sports.io/football/teams/25.png" },
+            { "nome": "Áustria", "escudo": "https://media.api-sports.io/football/teams/775.png" },
+            { "nome": "Bélgica", "escudo": "https://media.api-sports.io/football/teams/1.png" },
+            { "nome": "Bósnia e Herzegovina", "escudo": "https://media.api-sports.io/football/teams/27890.png" },
+            { "nome": "Croácia", "escudo": "https://media.api-sports.io/football/teams/3.png" },
+            { "nome": "Escócia", "escudo": "https://media.api-sports.io/football/teams/1108.png" },
+            { "nome": "Espanha", "escudo": "https://media.api-sports.io/football/teams/9.png" },
+            { "nome": "França", "escudo": "https://media.api-sports.io/football/teams/2.png" },
+            { "nome": "Holanda", "escudo": "https://media.api-sports.io/football/teams/1118.png" },
+            { "nome": "Inglaterra", "escudo": "https://media.api-sports.io/football/teams/10.png" },
+            { "nome": "Noruega", "escudo": "https://media.api-sports.io/football/teams/1090.png" },
+            { "nome": "Portugal", "escudo": "https://media.api-sports.io/football/teams/27.png" },
+            { "nome": "República Tcheca", "escudo": "https://media.api-sports.io/football/teams/770.png" },
+            { "nome": "Suécia", "escudo": "https://media.api-sports.io/football/teams/5.png" },
+            { "nome": "Suíça", "escudo": "https://media.api-sports.io/football/teams/15.png" },
+            { "nome": "Turquia", "escudo": "https://media.api-sports.io/football/teams/777.png" }
           ]
         },
         {
-          "nome": "América do Norte e Central",
+          "nome": "América do Norte, Central e Caribe",
           "times": [
-            { "nome": "México", "escudo": "https://flagcdn.com/h40/mx.png" },
-            { "nome": "Estados Unidos", "escudo": "https://flagcdn.com/h40/us.png" },
-            { "nome": "Canadá", "escudo": "https://flagcdn.com/h40/ca.png" },
-            { "nome": "Costa Rica", "escudo": "https://flagcdn.com/h40/cr.png" },
-            { "nome": "Panamá", "escudo": "https://flagcdn.com/h40/pa.png" },
-            { "nome": "Honduras", "escudo": "https://flagcdn.com/h40/hn.png" },
-            { "nome": "Jamaica", "escudo": "https://flagcdn.com/h40/jm.png" },
-            { "nome": "El Salvador", "escudo": "https://flagcdn.com/h40/sv.png" }
+            { "nome": "Canadá", "escudo": "https://media.api-sports.io/football/teams/5529.png" },
+            { "nome": "Estados Unidos", "escudo": "https://media.api-sports.io/football/teams/2384.png" },
+            { "nome": "México", "escudo": "https://media.api-sports.io/football/teams/16.png" },
+            { "nome": "Curaçao", "escudo": "https://media.api-sports.io/football/teams/5530.png" },
+            { "nome": "Haiti", "escudo": "https://media.api-sports.io/football/teams/2386.png" },
+            { "nome": "Panamá", "escudo": "https://media.api-sports.io/football/teams/11.png" }
           ]
         },
         {
           "nome": "Ásia",
           "times": [
-            { "nome": "Japão", "escudo": "https://flagcdn.com/h40/jp.png" },
-            { "nome": "Coreia do Sul", "escudo": "https://flagcdn.com/h40/kr.png" },
-            { "nome": "Irã", "escudo": "https://flagcdn.com/h40/ir.png" },
-            { "nome": "Arábia Saudita", "escudo": "https://flagcdn.com/h40/sa.png" },
-            { "nome": "Austrália", "escudo": "https://flagcdn.com/h40/au.png" },
-            { "nome": "Catar", "escudo": "https://flagcdn.com/h40/qa.png" },
-            { "nome": "Iraque", "escudo": "https://flagcdn.com/h40/iq.png" },
-            { "nome": "Emirados Árabes", "escudo": "https://flagcdn.com/h40/ae.png" }
+            { "nome": "Arábia Saudita", "escudo": "https://media.api-sports.io/football/teams/23.png" },
+            { "nome": "Austrália", "escudo": "https://media.api-sports.io/football/teams/20.png" },
+            { "nome": "Catar", "escudo": "https://media.api-sports.io/football/teams/1569.png" },
+            { "nome": "Coreia do Sul", "escudo": "https://media.api-sports.io/football/teams/17.png" },
+            { "nome": "Irã", "escudo": "https://media.api-sports.io/football/teams/22.png" },
+            { "nome": "Iraque", "escudo": "https://media.api-sports.io/football/teams/1567.png" },
+            { "nome": "Japão", "escudo": "https://media.api-sports.io/football/teams/12.png" },
+            { "nome": "Jordânia", "escudo": "https://media.api-sports.io/football/teams/1548.png" },
+            { "nome": "Uzbequistão", "escudo": "https://media.api-sports.io/football/teams/1568.png" }
           ]
         },
         {
           "nome": "África",
           "times": [
-            { "nome": "Cabo Verde", "escudo": "https://flagcdn.com/h40/cv.png" },
-            { "nome": "Senegal", "escudo": "https://flagcdn.com/h40/sn.png" },
-            { "nome": "Marrocos", "escudo": "https://flagcdn.com/h40/ma.png" },
-            { "nome": "Nigéria", "escudo": "https://flagcdn.com/h40/ng.png" },
-            { "nome": "Egito", "escudo": "https://flagcdn.com/h40/eg.png" },
-            { "nome": "Gana", "escudo": "https://flagcdn.com/h40/gh.png" },
-            { "nome": "Camarões", "escudo": "https://flagcdn.com/h40/cm.png" },
-            { "nome": "Argélia", "escudo": "https://flagcdn.com/h40/dz.png" },
-            { "nome": "Tunísia", "escudo": "https://flagcdn.com/h40/tn.png" },
-            { "nome": "Costa do Marfim", "escudo": "https://flagcdn.com/h40/ci.png" },
-            { "nome": "África do Sul", "escudo": "https://flagcdn.com/h40/za.png" }
+            { "nome": "África do Sul", "escudo": "https://media.api-sports.io/football/teams/1531.png" },
+            { "nome": "Argélia", "escudo": "https://media.api-sports.io/football/teams/1532.png" },
+            { "nome": "Cabo Verde", "escudo": "https://media.api-sports.io/football/teams/1533.png" },
+            { "nome": "Costa do Marfim", "escudo": "https://media.api-sports.io/football/teams/1501.png" },
+            { "nome": "Egito", "escudo": "https://media.api-sports.io/football/teams/32.png" },
+            { "nome": "Gana", "escudo": "https://media.api-sports.io/football/teams/1504.png" },
+            { "nome": "Marrocos", "escudo": "https://media.api-sports.io/football/teams/31.png" },
+            { "nome": "RD do Congo", "escudo": "https://media.api-sports.io/football/teams/1508.png" },
+            { "nome": "Senegal", "escudo": "https://media.api-sports.io/football/teams/13.png" },
+            { "nome": "Tunísia", "escudo": "https://media.api-sports.io/football/teams/28.png" }
+          ]
+        },
+        {
+          "nome": "Oceania",
+          "times": [
+            { "nome": "Nova Zelândia", "escudo": "https://media.api-sports.io/football/teams/4673.png" }
           ]
         }
       ]
@@ -97,50 +93,50 @@
         {
           "nome": "Brasil",
           "times": [
-            { "nome": "Flamengo", "escudo": "https://escudosfc.com.br/images/fla.png" },
-            { "nome": "Palmeiras", "escudo": "https://upload.wikimedia.org/wikipedia/commons/6/60/SE_Palmeiras_2025_crest.png?utm_source=pt.wikipedia.org&utm_campaign=index&utm_content=thumbnail_unscaled" },
-            { "nome": "Corinthians", "escudo": "https://escudosfc.com.br/images/Corinthians.png" },
-            { "nome": "São Paulo", "escudo": "https://escudosfc.com.br/images/saopaulo.png" },
-            { "nome": "Santos", "escudo": "https://escudosfc.com.br/images/santos.png" },
-            { "nome": "Grêmio", "escudo": "https://escudosfc.com.br/images/gremio.png" },
-            { "nome": "Internacional", "escudo": "https://escudosfc.com.br/images/interrs.png" },
-            { "nome": "Atlético-MG", "escudo": "https://escudosfc.com.br/images/atletico.png" },
-            { "nome": "Cruzeiro", "escudo": "https://escudosfc.com.br/images/cruzeiro.png" },
-            { "nome": "Fluminense", "escudo": "https://escudosfc.com.br/images/fluminense.png" },
-            { "nome": "Botafogo", "escudo": "https://escudosfc.com.br/images/botafogo.gif" },
-            { "nome": "Vasco", "escudo": "https://escudosfc.com.br/images/vasco.png" },
-            { "nome": "Athletico-PR", "escudo": "https://escudosfc.com.br/images/atlpr.png" },
-            { "nome": "Bahia", "escudo": "https://escudosfc.com.br/images/bahia.png" },
-            { "nome": "Fortaleza", "escudo": "https://escudosfc.com.br/images/fortaleza.png" },
-            { "nome": "Red Bull Bragantino", "escudo": "https://escudosfc.com.br/images/bragantino.png" }
+            { "nome": "Palmeiras", "escudo": "https://media.api-sports.io/football/teams/121" },
+            { "nome": "Bahia", "escudo": "https://media.api-sports.io/football/teams/118.png" },
+            { "nome": "Botafogo", "escudo": "https://media.api-sports.io/football/teams/120.png" },
+            { "nome": "Corinthians", "escudo": "https://media.api-sports.io/football/teams/131.png" },
+            { "nome": "Cruzeiro", "escudo": "https://media.api-sports.io/football/teams/135.png" },
+            { "nome": "Flamengo", "escudo": "https://media.api-sports.io/football/teams/127.png" },
+            { "nome": "Fluminense", "escudo": "https://media.api-sports.io/football/teams/124.png" },
+            { "nome": "Mirassol", "escudo": "https://media.api-sports.io/football/teams/7648.png" }
           ]
         },
         {
           "nome": "Argentina",
           "times": [
-            { "nome": "River Plate", "escudo": "https://media.api-sports.io/football/teams/435.png" },
-            { "nome": "Boca Juniors", "escudo": "https://escudosfc.com.br/images/bocc.png" },
-            { "nome": "Racing", "escudo": "https://escudosfc.com.br/images/racingc.png" },
-            { "nome": "Independiente", "escudo": "https://escudosfc.com.br/images/indepc.png" },
-            { "nome": "San Lorenzo", "escudo": "https://escudosfc.com.br/images/san_loc.png" },
-            { "nome": "Estudiantes", "escudo": "https://escudosfc.com.br/images/estudic.png" },
-            { "nome": "Vélez Sarsfield", "escudo": "https://escudosfc.com.br/images/velez.png" },
-            { "nome": "Rosario Central", "escudo": "https://escudosfc.com.br/images/rosarioc.png" }
+            { "nome": "Argentinos JRS", "escudo": "https://media.api-sports.io/football/teams/458.png" },
+            { "nome": "Boca Juniors", "escudo": "https://media.api-sports.io/football/teams/451.png" },
+            { "nome": "Estudiantes de La Plata", "escudo": "https://media.api-sports.io/football/teams/450.png" },
+            { "nome": "Independiente Rivadavia", "escudo": "https://media.api-sports.io/football/teams/473.png" },
+            { "nome": "Lanús", "escudo": "https://media.api-sports.io/football/teams/446.png" },
+            { "nome": "Platense", "escudo": "https://media.api-sports.io/football/teams/1064.png" },
+            { "nome": "Rosario Central", "escudo": "https://media.api-sports.io/football/teams/437.png" }
           ]
         },
         {
           "nome": "Uruguai",
           "times": [
-            { "nome": "Peñarol", "escudo": "https://escudosfc.com.br/images/penarol.png" },
-            { "nome": "Nacional", "escudo": "https://escudosfc.com.br/images/naciouru.png" },
-            { "nome": "Defensor Sporting", "escudo": "https://escudosfc.com.br/images/defensor.jpg" }
+            { "nome": "Juventud", "escudo": "https://media.api-sports.io/football/teams/2353.png" },
+            { "nome": "Liverpool", "escudo": "https://media.api-sports.io/football/teams/2358.png" },
+            { "nome": "Nacional", "escudo": "https://media.api-sports.io/football/teams/11058.jpg" },
+            { "nome": "Peñarol", "escudo": "https://media.api-sports.io/football/teams/2348.png" },
+          ]
+        },
+        {
+          "nome": "Chile",
+          "times": [
+            { "nome": "Coquimbo Unido", "escudo": "https://media.api-sports.io/football/teams/2330.png" },
+            { "nome": "Huachipato", "escudo": "https://media.api-sports.io/football/teams/2328.png" },
+            { "nome": "O'Higgins", "escudo": "https://media.api-sports.io/football/teams/2320.jpg" },
+            { "nome": "Universidad Católica", "escudo": "https://escudosfc.com.br/images/unicatolica.png" }
           ]
         },
         {
           "nome": "Outros Sul-Americanos",
           "times": [
-            { "nome": "Colo-Colo", "escudo": "https://escudosfc.com.br/images/colocolo.png" },
-            { "nome": "Universidad Católica", "escudo": "https://escudosfc.com.br/images/unicatolica.png" }
+
           ]
         }
       ]
@@ -245,51 +241,6 @@
             { "nome": "Copenhagen", "escudo": "https://media.api-sports.io/football/teams/225.png" },
             { "nome": "RB Salzburg", "escudo": "https://media.api-sports.io/football/teams/226.png" },
             { "nome": "Galatasaray", "escudo": "https://media.api-sports.io/football/teams/610.png" }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "brasileirao",
-      "nome": "Brasileirão",
-      "descricao": "Clubes das principais divisões do Brasil",
-      "grupos": [
-        {
-          "nome": "Série A",
-          "times": [
-            { "nome": "Flamengo", "escudo": "https://escudosfc.com.br/images/fla.png" },
-            { "nome": "Palmeiras", "escudo": "https://upload.wikimedia.org/wikipedia/commons/6/60/SE_Palmeiras_2025_crest.png?utm_source=pt.wikipedia.org&utm_campaign=index&utm_content=thumbnail_unscaled" },
-            { "nome": "Corinthians", "escudo": "https://escudosfc.com.br/images/Corinthians.png" },
-            { "nome": "São Paulo", "escudo": "https://escudosfc.com.br/images/saopaulo.png" },
-            { "nome": "Santos", "escudo": "https://escudosfc.com.br/images/santos.png" },
-            { "nome": "Grêmio", "escudo": "https://escudosfc.com.br/images/gremio.png" },
-            { "nome": "Internacional", "escudo": "https://escudosfc.com.br/images/interrs.png" },
-            { "nome": "Atlético-MG", "escudo": "https://escudosfc.com.br/images/atletico.png" },
-            { "nome": "Cruzeiro", "escudo": "https://escudosfc.com.br/images/cruzeiro.png" },
-            { "nome": "Fluminense", "escudo": "https://escudosfc.com.br/images/fluminense.png" },
-            { "nome": "Botafogo", "escudo": "https://escudosfc.com.br/images/botafogo.gif" },
-            { "nome": "Vasco", "escudo": "https://escudosfc.com.br/images/vasco.png" },
-            { "nome": "Athletico-PR", "escudo": "https://escudosfc.com.br/images/atlpr.png" },
-            { "nome": "Bahia", "escudo": "https://escudosfc.com.br/images/bahia.png" },
-            { "nome": "Fortaleza", "escudo": "https://escudosfc.com.br/images/fortaleza.png" },
-            { "nome": "Red Bull Bragantino", "escudo": "https://escudosfc.com.br/images/bragantino.png" },
-            { "nome": "Cuiabá", "escudo": "https://media.api-sports.io/football/teams/79.png" },
-            { "nome": "Juventude", "escudo": "https://media.api-sports.io/football/teams/80.png" },
-            { "nome": "Criciúma", "escudo": "https://media.api-sports.io/football/teams/81.png" },
-            { "nome": "Atlético-GO", "escudo": "https://media.api-sports.io/football/teams/82.png" }
-          ]
-        },
-        {
-          "nome": "Série B",
-          "times": [
-            { "nome": "Coritiba", "escudo": "https://media.api-sports.io/football/teams/83.png" },
-            { "nome": "Goiás", "escudo": "https://media.api-sports.io/football/teams/84.png" },
-            { "nome": "Vitória", "escudo": "https://media.api-sports.io/football/teams/85.png" },
-            { "nome": "Chapecoense", "escudo": "https://media.api-sports.io/football/teams/86.png" },
-            { "nome": "Sport Recife", "escudo": "https://media.api-sports.io/football/teams/87.png" },
-            { "nome": "América-MG", "escudo": "https://media.api-sports.io/football/teams/88.png" },
-            { "nome": "CRB", "escudo": "https://media.api-sports.io/football/teams/89.png" },
-            { "nome": "Botafogo-SP", "escudo": "https://media.api-sports.io/football/teams/90.png" }
           ]
         }
       ]
