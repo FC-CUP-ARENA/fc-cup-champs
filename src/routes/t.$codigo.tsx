@@ -313,6 +313,17 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const anyGroup = teams.some((t) => t.grupo);
+  const directKO = tournament.max_jogadores <= 4;
+
+  if (directKO) {
+    return (
+      <EmptyPanel
+        icon={<Swords className="h-6 w-6" />}
+        title="Torneio sem fase de grupos"
+        description={`Com apenas ${tournament.max_jogadores} times, o torneio é disputado direto no mata-mata (${tournament.formato_mata_mata === "ida_e_volta" ? "ida e volta" : "jogo único"}). Veja a aba Mata-Mata.`}
+      />
+    );
+  }
 
   if (!anyGroup) {
     return (
