@@ -443,6 +443,10 @@ function GroupsPanel({
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const groupMatches = matches.filter((m) => m.fase === "grupos");
+  const directKO = tournament.max_jogadores <= 4;
+  if (directKO) {
+    return <DirectKnockoutManager tournament={tournament} teams={teams} matches={matches} />;
+  }
   return (
     <div className="space-y-6">
       <GroupManager tournament={tournament} teams={teams} />
