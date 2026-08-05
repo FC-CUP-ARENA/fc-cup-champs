@@ -8,6 +8,9 @@ import {
   X,
   Globe,
   RefreshCw,
+  KeyRound,
+  Copy,
+  TriangleAlert as AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +27,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   COMPETITIONS,
   type CatalogTeam,
@@ -97,6 +109,7 @@ function CreateTournamentPage() {
   const [compId, setCompId] = useState<string>(COMPETITIONS[0].id);
   const [selectedTeams, setSelectedTeams] = useState<CatalogTeam[]>([]);
   const [search, setSearch] = useState("");
+  const [created, setCreated] = useState<{ codigo: string; chave: string } | null>(null);
 
   const competition = useMemo(
     () => COMPETITIONS.find((c) => c.id === compId) ?? COMPETITIONS[0],
@@ -161,15 +174,74 @@ function CreateTournamentPage() {
     toast.success("Torneio criado com sucesso!", {
       description: `Código: ${res.tournament.codigo_unico}`,
     });
+    setCreated({
+      codigo: res.tournament.codigo_unico,
+      chave: res.tournament.chave_mestra_admin,
+    });
+  };
+
+  const goToAdmin = () => {
+    if (!created) return;
     navigate({
       to: "/t/$codigo/admin",
-      params: { codigo: res.tournament.codigo_unico },
-      search: { key: res.tournament.chave_mestra_admin },
+      params: { codigo: created.codigo },
+      search: { key: created.chave },
     });
   };
 
   return (
     <div className="min-h-screen" style={{ backgroundImage: "var(--gradient-hero)" }}>
+      <AlertDialog open={created !== null}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" /> Guarde sua Chave Mestra!
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta chave dá acesso ao painel de administração do torneio e{" "}
+              <strong className="text-foreground">não será exibida novamente</strong>. Copie e guarde em
+              local seguro antes de continuar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-3">
+            <div className="rounded-xl border border-border bg-background/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Código do torneio</p>
+              <p className="font-mono text-lg font-black text-foreground">{created?.codigo}</p>
+            </div>
+            <div className="rounded-xl border border-primary/40 bg-primary/10 p-3">
+              <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary">
+                <KeyRound className="h-3 w-3" /> Chave mestra admin
+              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-mono text-lg font-black text-primary">{created?.chave}</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (!created) return;
+                    navigator.clipboard.writeText(
+                      `Torneio ${created.codigo} — Chave mestra: ${created.chave}`,
+                    );
+                    toast.success("Chave copiada");
+                  }}
+                >
+                  <Copy className="mr-1 h-3.5 w-3.5" /> Copiar
+                </Button>
+              </div>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={goToAdmin}
+              className="bg-primary text-primary-foreground hover:bg-primary-glow"
+            >
+              Guardei a chave, continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Top nav */}
       <div className="border-b border-border/60">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">

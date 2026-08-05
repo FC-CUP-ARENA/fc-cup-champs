@@ -359,6 +359,16 @@ export function updateRegulamento(id: string, regulamento_texto: string) {
   });
 }
 
+export function deleteTournament(id: string) {
+  setState({
+    ...state,
+    tournaments: state.tournaments.filter((t) => t.id !== id),
+    teams: state.teams.filter((t) => t.torneio_id !== id),
+    players: state.players.filter((p) => p.torneio_id !== id),
+    matches: state.matches.filter((m) => m.torneio_id !== id),
+  });
+}
+
 export function toggleTeamAtivo(teamId: string, ativo: boolean) {
   setState({
     ...state,
