@@ -36,7 +36,6 @@ import {
   saveMatchScore,
   launchWO,
   computeGroupStandings,
-  getMatchWinner,
   getTieWinner,
   calcularIdade,
   drawGroups,
