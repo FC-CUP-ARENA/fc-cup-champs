@@ -710,9 +710,9 @@ function BracketColumn({
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>
             <p className="mt-1 font-display text-lg font-black">
-              <TeamCrest src={teams.get(getMatchWinner(matches[0])!)?.escudo_url ?? ""} alt={teams.get(getMatchWinner(matches[0])!)?.nome ?? ""} size={28} className="mr-1 inline-block align-middle" /> {players.get(getMatchWinner(matches[0])!)?.gamertag_nick ?? teams.get(getMatchWinner(matches[0])!)?.nome}
+              <TeamCrest src={teams.get(getTieWinner(matches)!)?.escudo_url ?? ""} alt={teams.get(getTieWinner(matches)!)?.nome ?? ""} size={28} className="mr-1 inline-block align-middle" /> {players.get(getTieWinner(matches)!)?.gamertag_nick ?? teams.get(getTieWinner(matches)!)?.nome}
             </p>
-            <p className="text-xs text-muted-foreground">{teams.get(getMatchWinner(matches[0])!)?.nome}</p>
+            <p className="text-xs text-muted-foreground">{teams.get(getTieWinner(matches)!)?.nome}</p>
           </Card>
         )}
       </div>
