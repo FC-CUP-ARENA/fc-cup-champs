@@ -412,13 +412,14 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
+  const directKO = tournament.max_jogadores <= 4;
 
-  if (q.length === 0) {
+  if (q.length === 0 && (!directKO || s.length === 0)) {
     return (
       <EmptyPanel
         icon={<Swords className="h-6 w-6" />}
         title="Mata-mata bloqueado"
-        description={`Formato: ${tournament.formato_mata_mata === "ida_e_volta" ? "Ida e Volta" : "Jogo Único"}. Disponível após o encerramento da fase de grupos.`}
+        description={`Formato: ${tournament.formato_mata_mata === "ida_e_volta" ? "Ida e Volta" : "Jogo Único"}. ${directKO ? "Aguardando o sorteio das semifinais pelo organizador." : "Disponível após o encerramento da fase de grupos."}`}
       />
     );
   }
@@ -437,12 +438,18 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
           <p className="text-xs text-muted-foreground">{teamMap.get(champion)?.nome}</p>
         </Card>
       )}
-      <div className="grid gap-4 md:grid-cols-3">
-        {([
-          ["Quartas de Final", q, ""],
-          ["Semifinal", s, "Aguardando quartas"],
-          ["Final", f, "Aguardando semifinal"],
-        ] as const).map(([title, list, placeholder]) => (
+      <div className={`grid gap-4 ${directKO ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
+        {(directKO
+          ? ([
+              ["Semifinal", s, ""],
+              ["Final", f, "Aguardando semifinais"],
+            ] as const)
+          : ([
+              ["Quartas de Final", q, ""],
+              ["Semifinal", s, "Aguardando quartas"],
+              ["Final", f, "Aguardando semifinal"],
+            ] as const)
+        ).map(([title, list, placeholder]) => (
           <div key={title}>
             <h3 className="mb-2 font-display text-sm font-bold uppercase tracking-widest text-primary">{title}</h3>
             <div className="space-y-2">
