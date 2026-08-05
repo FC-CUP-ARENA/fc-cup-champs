@@ -55,8 +55,8 @@ export type Match = {
 const TOURNAMENT_ID = "t1";
 
 const teamsSeed: Array<{ nome: string; escudo: string }> = [
-  { nome: "Brasil", escudo: "https://flagcdn.com/h40/br.png" },
-  { nome: "Argentina", escudo: "https://flagcdn.com/h40/ar.png" },
+  { nome: "Brasil", escudo: "https://media.api-sports.io/football/teams/6.png" },
+  { nome: "Argentina", escudo: "https://media.api-sports.io/football/teams/26.png" },
   { nome: "França", escudo: "https://flagcdn.com/h40/fr.png" },
   { nome: "Alemanha", escudo: "https://flagcdn.com/h40/de.png" },
   { nome: "Espanha", escudo: "https://flagcdn.com/h40/es.png" },
