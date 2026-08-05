@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Copy, KeyRound, Trash2, Bot, Save, TriangleAlert as AlertTriangle, Trophy, Shuffle, RefreshCw, Eraser } from "lucide-react";
 import { toast } from "sonner";
@@ -21,9 +21,15 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   useFcState,
   setTournamentStatus,
   updateRegulamento,
+  deleteTournament,
   toggleTeamAtivo,
   deletePlayer,
   fillWithBots,
