@@ -49,7 +49,7 @@ function Home() {
                 FC CUP ARENA
               </h1>
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                EA Sports FC 26
+                e-Sports
               </p>
             </div>
           </div>
