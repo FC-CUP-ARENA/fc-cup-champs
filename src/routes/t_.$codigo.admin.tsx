@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Copy, KeyRound, Trash2, Bot, Save, AlertTriangle, Trophy, Shuffle, RefreshCw, Eraser } from "lucide-react";
+import { ArrowLeft, Copy, KeyRound, Trash2, Bot, Save, TriangleAlert as AlertTriangle, Trophy, Shuffle, RefreshCw, Eraser } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

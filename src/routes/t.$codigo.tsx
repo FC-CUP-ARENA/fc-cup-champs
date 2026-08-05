@@ -1,19 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  Check,
-  Copy,
-  Trophy,
-  Users,
-  Lock,
-  BookOpen,
-  LayoutGrid,
-  Swords,
-  UserPlus,
-  Calendar,
-  AlertTriangle,
-} from "lucide-react";
+import { ArrowLeft, Check, Copy, Trophy, Users, Lock, BookOpen, LayoutGrid, Swords, UserPlus, Calendar, TriangleAlert as AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

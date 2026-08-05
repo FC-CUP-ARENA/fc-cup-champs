@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CriarRouteImport } from './routes/criar'
 import { Route as TCodigoRouteImport } from './routes/t.$codigo'
 import { Route as TCodigoAdminRouteImport } from './routes/t_.$codigo.admin'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CriarRoute = CriarRouteImport.update({
+  id: '/criar',
+  path: '/criar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TCodigoRoute = TCodigoRouteImport.update({
@@ -31,30 +37,34 @@ const TCodigoAdminRoute = TCodigoAdminRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/criar': typeof CriarRoute
   '/t/$codigo': typeof TCodigoRoute
   '/t/$codigo/admin': typeof TCodigoAdminRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/criar': typeof CriarRoute
   '/t/$codigo': typeof TCodigoRoute
   '/t/$codigo/admin': typeof TCodigoAdminRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/criar': typeof CriarRoute
   '/t/$codigo': typeof TCodigoRoute
   '/t_/$codigo/admin': typeof TCodigoAdminRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/t/$codigo' | '/t/$codigo/admin'
+  fullPaths: '/' | '/criar' | '/t/$codigo' | '/t/$codigo/admin'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/t/$codigo' | '/t/$codigo/admin'
-  id: '__root__' | '/' | '/t/$codigo' | '/t_/$codigo/admin'
+  to: '/' | '/criar' | '/t/$codigo' | '/t/$codigo/admin'
+  id: '__root__' | '/' | '/criar' | '/t/$codigo' | '/t_/$codigo/admin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CriarRoute: typeof CriarRoute
   TCodigoRoute: typeof TCodigoRoute
   TCodigoAdminRoute: typeof TCodigoAdminRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/criar': {
+      id: '/criar'
+      path: '/criar'
+      fullPath: '/criar'
+      preLoaderRoute: typeof CriarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/t/$codigo': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CriarRoute: CriarRoute,
   TCodigoRoute: TCodigoRoute,
   TCodigoAdminRoute: TCodigoAdminRoute,
 }
