@@ -96,8 +96,8 @@
         {
           "nome": "Brasil",
           "times": [
-            { "nome": "Flamengo", "escudo": "https://escudosfc.com.br/images/fla.png" },
-            { "nome": "Palmeiras", "escudo": "https://upload.wikimedia.org/wikipedia/commons/6/60/SE_Palmeiras_2025_crest.png" },
+            { "nome": "Flamengo", "escudo": "https://static.wixstatic.com/media/29c778_42a1f46bcbe8412e8fdb8da12d0f654d~mv2.png/v1/fit/w_382,h_488,q_90,enc_avif,quality_auto/29c778_42a1f46bcbe8412e8fdb8da12d0f654d~mv2.png" },
+            { "nome": "Palmeiras", "escudo": "https://static.wixstatic.com/media/29c778_207b3727…o/29c778_207b3727cd814aad8939151aea70d47f~mv2.png" },
             { "nome": "Corinthians", "escudo": "https://escudosfc.com.br/images/Corinthians.png" },
             { "nome": "São Paulo", "escudo": "https://escudosfc.com.br/images/saopaulo.png" },
             { "nome": "Santos", "escudo": "https://escudosfc.com.br/images/santos.png" },
@@ -256,8 +256,8 @@
         {
           "nome": "Série A",
           "times": [
-            { "nome": "Flamengo", "escudo": "https://escudosfc.com.br/images/fla.png" },
-            { "nome": "Palmeiras", "escudo": "https://upload.wikimedia.org/wikipedia/commons/6/60/SE_Palmeiras_2025_crest.png" },
+            { "nome": "Flamengo", "escudo": "https://static.wixstatic.com/media/29c778_42a1f46bcbe8412e8fdb8da12d0f654d~mv2.png/v1/fit/w_382,h_488,q_90,enc_avif,quality_auto/29c778_42a1f46bcbe8412e8fdb8da12d0f654d~mv2.png" },
+            { "nome": "Palmeiras", "escudo": "https://static.wixstatic.com/media/29c778_207b3727…o/29c778_207b3727cd814aad8939151aea70d47f~mv2.png" },
             { "nome": "Corinthians", "escudo": "https://escudosfc.com.br/images/Corinthians.png" },
             { "nome": "São Paulo", "escudo": "https://escudosfc.com.br/images/saopaulo.png" },
             { "nome": "Santos", "escudo": "https://escudosfc.com.br/images/santos.png" },
