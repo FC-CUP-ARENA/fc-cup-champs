@@ -525,6 +525,111 @@ function isKnockoutPhase(f: Match["fase"]) {
   return f === "quartas" || f === "semi" || f === "final";
 }
 
+/* ============= Mata-mata direto (4 times) ============= */
+
+function isTwoLegged(torneio_id: string): boolean {
+  const t = state.tournaments.find((x) => x.id === torneio_id);
+  return t?.formato_mata_mata === "ida_e_volta";
+}
+
+/** Cria as partidas de um confronto (1 ou 2 jogos conforme o formato). */
+function makeTie(
+  torneio_id: string,
+  fase: "quartas" | "semi" | "final",
+  ordem: number,
+  a: string,
+  b: string,
+): Match[] {
+  const chave = `${fase}-${ordem}`;
+  const base = (perna: 1 | 2, mandante: string, visitante: string): Match => ({
+    id: `m-${chave}-p${perna}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    torneio_id,
+    fase,
+    ordem: ordem * 2 + (perna - 1),
+    chave,
+    perna,
+    time_mandante_id: mandante,
+    time_visitante_id: visitante,
+    gols_mandante: null,
+    gols_visitante: null,
+    penaltis_mandante: null,
+    penaltis_visitante: null,
+    status: "pendente",
+  });
+  return isTwoLegged(torneio_id)
+    ? [base(1, a, b), base(2, b, a)]
+    : [base(1, a, b)];
+}
+
+/** Sorteia os 4 times direto nas semifinais (sem fase de grupos). */
+export function drawDirectKnockout(torneio_id: string): { ok: boolean; error?: string } {
+  const pool = state.teams.filter(
+    (t) => t.torneio_id === torneio_id && t.ativo_pelo_admin && t.ocupado,
+  );
+  if (pool.length < 4) {
+    return { ok: false, error: "São necessários 4 times inscritos para sortear o mata-mata." };
+  }
+  const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 4);
+  const semis = [
+    ...makeTie(torneio_id, "semi", 0, shuffled[0].id, shuffled[3].id),
+    ...makeTie(torneio_id, "semi", 1, shuffled[1].id, shuffled[2].id),
+  ];
+  setState({
+    ...state,
+    teams: state.teams.map((t) =>
+      t.torneio_id === torneio_id ? { ...t, grupo: null } : t,
+    ),
+    matches: [...state.matches.filter((m) => m.torneio_id !== torneio_id), ...semis],
+  });
+  return { ok: true };
+}
+
+/** Agrupa as partidas de uma fase em confrontos. */
+function tiesOfPhase(torneio_id: string, fase: Match["fase"]): Match[][] {
+  const ms = state.matches
+    .filter((m) => m.torneio_id === torneio_id && m.fase === fase)
+    .sort((a, b) => a.ordem - b.ordem);
+  const map = new Map<string, Match[]>();
+  ms.forEach((m) => {
+    const k = m.chave ?? m.id;
+    map.set(k, [...(map.get(k) ?? []), m]);
+  });
+  return Array.from(map.values());
+}
+
+/** Vencedor de um confronto (jogo único ou agregado de ida e volta). */
+function winnerOfTie(legs: Match[]): string | null {
+  if (legs.length === 0) return null;
+  if (legs.some((m) => m.status === "pendente")) return null;
+  if (legs.length === 1) return winnerOf(legs[0]);
+  const ordered = [...legs].sort((a, b) => (a.perna ?? 1) - (b.perna ?? 1));
+  const teamA = ordered[0].time_mandante_id;
+  const teamB = ordered[0].time_visitante_id;
+  let ga = 0;
+  let gb = 0;
+  ordered.forEach((m) => {
+    const gm = m.gols_mandante ?? 0;
+    const gv = m.gols_visitante ?? 0;
+    if (m.time_mandante_id === teamA) { ga += gm; gb += gv; }
+    else { gb += gm; ga += gv; }
+  });
+  if (ga > gb) return teamA;
+  if (gb > ga) return teamB;
+  const last = ordered[ordered.length - 1];
+  const pm = last.penaltis_mandante ?? 0;
+  const pv = last.penaltis_visitante ?? 0;
+  if (pm > pv) return last.time_mandante_id;
+  if (pv > pm) return last.time_visitante_id;
+  return null;
+}
+
+export function getTieWinner(legs: Match[]) {
+  return winnerOfTie(legs);
+}
+export function getPhaseTies(torneio_id: string, fase: Match["fase"]) {
+  return tiesOfPhase(torneio_id, fase);
+}
+
 function winnerOf(m: Match): string | null {
   if (m.status !== "concluido" && m.status !== "wo") return null;
   const gm = m.gols_mandante ?? 0;
