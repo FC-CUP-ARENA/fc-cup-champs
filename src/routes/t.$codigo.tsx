@@ -35,6 +35,7 @@ import {
   type Team,
   type Tournament,
   type Match,
+  type Player,
 } from "@/lib/fc-data";
 
 export const Route = createFileRoute("/t/$codigo")({
@@ -250,9 +251,11 @@ function EmptyPanel({
 
 /* ------------------------ Public groups & bracket ------------------------ */
 
-function ScoreRow({ match, teams }: { match: Match; teams: Map<string, Team> }) {
+function ScoreRow({ match, teams, players }: { match: Match; teams: Map<string, Team>; players: Map<string, Player> }) {
   const a = teams.get(match.time_mandante_id);
   const b = teams.get(match.time_visitante_id);
+  const pa = a ? players.get(a.id) : undefined;
+  const pb = b ? players.get(b.id) : undefined;
   const done = match.status !== "pendente";
   const winner = getMatchWinner(match);
   return (
@@ -263,9 +266,14 @@ function ScoreRow({ match, teams }: { match: Match; teams: Map<string, Team> }) 
       ].join(" ")}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className={["flex min-w-0 flex-1 items-center gap-1.5", winner === a?.id ? "font-bold text-primary" : ""].join(" ")}>
-          <span className="text-lg">{a?.escudo_url}</span>
-          <span className="truncate">{a?.nome}</span>
+        <span className={["flex min-w-0 flex-1 flex-col items-start gap-0.5", winner === a?.id ? "font-bold text-primary" : ""].join(" ")}>
+          <span className="flex items-center gap-1.5">
+            <span className="text-lg">{a?.escudo_url}</span>
+            <span className="truncate">{pa?.gamertag_nick ?? a?.nome}</span>
+          </span>
+          {(pa || a) && (
+            <span className="truncate pl-6 text-[10px] text-muted-foreground">{a?.nome}</span>
+          )}
         </span>
         <span className="shrink-0 font-mono text-sm font-bold">
           {done ? `${match.gols_mandante ?? 0} x ${match.gols_visitante ?? 0}` : "— x —"}
@@ -275,9 +283,14 @@ function ScoreRow({ match, teams }: { match: Match; teams: Map<string, Team> }) 
             </span>
           )}
         </span>
-        <span className={["flex min-w-0 flex-1 items-center justify-end gap-1.5", winner === b?.id ? "font-bold text-primary" : ""].join(" ")}>
-          <span className="truncate text-right">{b?.nome}</span>
-          <span className="text-lg">{b?.escudo_url}</span>
+        <span className={["flex min-w-0 flex-1 flex-col items-end gap-0.5", winner === b?.id ? "font-bold text-primary" : ""].join(" ")}>
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-right">{pb?.gamertag_nick ?? b?.nome}</span>
+            <span className="text-lg">{b?.escudo_url}</span>
+          </span>
+          {(pb || b) && (
+            <span className="truncate pr-6 text-[10px] text-muted-foreground">{b?.nome}</span>
+          )}
         </span>
       </div>
       {match.data_jogo && (
@@ -293,7 +306,11 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
   const matches = useFcState((s) =>
     s.matches.filter((m) => m.torneio_id === tournament.id && m.fase === "grupos"),
   );
+  const players = useFcState((s) =>
+    s.players.filter((p) => p.torneio_id === tournament.id),
+  );
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const anyGroup = teams.some((t) => t.grupo);
 
   if (!anyGroup) {
@@ -330,11 +347,17 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
                 <tbody>
                   {standings.map((s, idx) => {
                     const t = teamMap.get(s.time_id);
+                    const p = t ? playerByTeam.get(t.id) : undefined;
                     return (
                       <tr key={s.time_id} className={idx < 2 ? "bg-primary/5" : ""}>
-                        <td className="truncate py-1.5">
-                          <span className="mr-1">{t?.escudo_url}</span>
-                          <span className="text-xs font-semibold">{t?.nome}</span>
+                        <td className="py-1.5">
+                          <div className="flex items-center gap-1">
+                            <span className="text-base">{t?.escudo_url}</span>
+                            <div className="min-w-0">
+                              <div className="truncate text-xs font-semibold">{p?.gamertag_nick ?? t?.nome}</div>
+                              <div className="truncate text-[10px] text-muted-foreground">{t?.nome}</div>
+                            </div>
+                          </div>
                         </td>
                         <td className="py-1.5 text-right font-bold">{s.P}</td>
                         <td className="py-1.5 text-right">{s.J}</td>
@@ -354,7 +377,7 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
               <div className="mt-4 space-y-2">
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Resultados</p>
                 {gm.map((m) => (
-                  <ScoreRow key={m.id} match={m} teams={teamMap} />
+                  <ScoreRow key={m.id} match={m} teams={teamMap} players={playerByTeam} />
                 ))}
               </div>
             )}
@@ -369,7 +392,11 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
   const matches = useFcState((s) =>
     s.matches.filter((m) => m.torneio_id === tournament.id && m.fase !== "grupos"),
   );
+  const players = useFcState((s) =>
+    s.players.filter((p) => p.torneio_id === tournament.id),
+  );
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
@@ -393,8 +420,9 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
           <Trophy className="mx-auto h-7 w-7 text-primary" />
           <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>
           <p className="mt-1 font-display text-xl font-black">
-            {teamMap.get(champion)?.escudo_url} {teamMap.get(champion)?.nome}
+            {teamMap.get(champion)?.escudo_url} {playerByTeam.get(champion)?.gamertag_nick ?? teamMap.get(champion)?.nome}
           </p>
+          <p className="text-xs text-muted-foreground">{teamMap.get(champion)?.nome}</p>
         </Card>
       )}
       <div className="grid gap-4 md:grid-cols-3">
@@ -412,7 +440,7 @@ function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: T
                 </div>
               )}
               {list.map((m) => (
-                <ScoreRow key={m.id} match={m} teams={teamMap} />
+                <ScoreRow key={m.id} match={m} teams={teamMap} players={playerByTeam} />
               ))}
             </div>
           </div>

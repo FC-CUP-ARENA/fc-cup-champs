@@ -250,6 +250,67 @@ function setState(next: State) {
   emit();
 }
 
+export type CreateTournamentInput = {
+  nome: string;
+  codigo_unico: string;
+  chave_mestra_admin: string;
+  regulamento_texto: string;
+  max_jogadores: number;
+  formato_mata_mata: "jogo_unico" | "ida_e_volta";
+  data_limite_inscricoes?: string | null;
+  teams: Array<{ nome: string; escudo_url: string }>;
+};
+
+export type CreateTournamentResult =
+  | { ok: true; tournament: Tournament }
+  | { ok: false; error: string };
+
+export function createTournament(input: CreateTournamentInput): CreateTournamentResult {
+  if (!input.nome.trim()) return { ok: false, error: "Informe o nome do torneio." };
+  if (!input.codigo_unico.trim()) return { ok: false, error: "Informe um código único." };
+  if (!input.chave_mestra_admin.trim()) return { ok: false, error: "Informe a chave mestra." };
+  if (input.max_jogadores < 4 || input.max_jogadores % 2 !== 0) {
+    return { ok: false, error: "O número de times deve ser par e no mínimo 4." };
+  }
+  if (input.teams.length !== input.max_jogadores) {
+    return { ok: false, error: `Selecione exatamente ${input.max_jogadores} times.` };
+  }
+  const exists = state.tournaments.some(
+    (t) => t.codigo_unico.toLowerCase() === input.codigo_unico.toLowerCase(),
+  );
+  if (exists) return { ok: false, error: "Já existe um torneio com este código." };
+
+  const id = `t-${Date.now()}`;
+  const tournament: Tournament = {
+    id,
+    nome: input.nome.trim(),
+    codigo_unico: input.codigo_unico.trim().toUpperCase(),
+    chave_mestra_admin: input.chave_mestra_admin.trim().toUpperCase(),
+    regulamento_texto: input.regulamento_texto,
+    max_jogadores: input.max_jogadores,
+    formato_mata_mata: input.formato_mata_mata,
+    status: "inscricoes_abertas",
+    data_limite_inscricoes: input.data_limite_inscricoes ?? null,
+  };
+  const teams: Team[] = input.teams.map((t, i) => ({
+    id: `${id}-team-${i + 1}`,
+    torneio_id: id,
+    nome: t.nome,
+    escudo_url: t.escudo_url,
+    ativo_pelo_admin: true,
+    ocupado: false,
+    grupo: null,
+  }));
+  setState({
+    ...state,
+    tournaments: [...state.tournaments, tournament],
+    teams: [...state.teams, ...teams],
+    players: [...state.players],
+    matches: [...state.matches],
+  });
+  return { ok: true, tournament };
+}
+
 export function setRegistrationDeadline(id: string, data_limite: string | null) {
   setState({
     ...state,
