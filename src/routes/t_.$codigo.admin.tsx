@@ -190,7 +190,7 @@ function AdminInner({ tournament }: { tournament: Tournament }) {
         </div>
       </div>
 
-      <header className="mx-auto max-w-6xl px-4 pb-4 pt-6">
+      <header className="mx-auto w-full max-w-6xl px-4 pb-4 pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[var(--shadow-neon)]">

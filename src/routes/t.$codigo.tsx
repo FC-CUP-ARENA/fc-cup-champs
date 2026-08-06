@@ -137,8 +137,8 @@ function TournamentInner({ tournament }: { tournament: Tournament }) {
       </div>
 
       {/* Header */}
-      <header className="mx-auto max-w-5xl px-4 pb-6 pt-8">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
+      <header className="mx-auto w-full max-w-5xl px-4 pb-6 pt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[var(--shadow-neon)]">
               <Trophy className="h-6 w-6" />
@@ -156,19 +156,21 @@ function TournamentInner({ tournament }: { tournament: Tournament }) {
               </p>
             </div>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={copyLink}
-            className="shrink-0 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
-          >
-            <Copy className="mr-1 h-3.5 w-3.5" /> Copiar link
-          </Button>
-          <Button asChild size="sm" variant="ghost" className="shrink-0 text-xs text-muted-foreground hover:text-primary">
-            <Link to="/t/$codigo/admin" params={{ codigo: tournament.codigo_unico }}>
-              <Lock className="mr-1 h-3.5 w-3.5" /> Admin
-            </Link>
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={copyLink}
+              className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+            >
+              <Copy className="mr-1 h-3.5 w-3.5" /> Copiar link
+            </Button>
+            <Button asChild size="sm" variant="ghost" className="text-xs text-muted-foreground hover:text-primary">
+              <Link to="/t/$codigo/admin" params={{ codigo: tournament.codigo_unico }}>
+                <Lock className="mr-1 h-3.5 w-3.5" /> Admin
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
