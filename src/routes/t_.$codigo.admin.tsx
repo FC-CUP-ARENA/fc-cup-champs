@@ -59,6 +59,7 @@ import {
 } from "@/lib/fc-data";
 import { TeamCrest } from "@/components/team-crest";
 import { AppFooter } from "@/components/app-footer";
+import { formatMasterKey } from "@/lib/code-utils";
 
 type Search = { key?: string };
 
@@ -143,9 +144,12 @@ function AdminPage() {
           >
             <Input
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="ADM-XXXX"
-              className="text-center font-mono"
+              onChange={(e) => setInput(formatMasterKey(e.target.value))}
+              placeholder="XXX-XXX"
+              className="text-center font-mono uppercase tracking-widest"
+              maxLength={7}
+              autoComplete="off"
+              autoCapitalize="characters"
             />
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary-glow">
               Entrar
