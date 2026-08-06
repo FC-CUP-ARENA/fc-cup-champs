@@ -16,21 +16,33 @@ import { Toaster } from "@/components/ui/sonner";
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+      <div className="max-w-md text-center p-6">
+        {/* O 404 ganhou um peso extra e uma animação sutil se quiser adicionar */}
+        <h1 className="text-8xl font-black tracking-tighter text-foreground animate-pulse">
+          404
+        </h1>
+
+        {/* Título mais jovem e direto */}
+        <h2 className="mt-4 text-2xl font-black text-foreground">
+          Ué, sumiu! 🗺️
+        </h2>
+
+        {/* Texto leve e divertido */}
+        <p className="mt-3 text-base text-muted-foreground leading-relaxed">
+          Essa página simplesmente deu um perdido na gente. Ou ela mudou de nome, ou foi dar um rolê na internet e nunca mais voltou.
         </p>
-        <div className="mt-6">
+
+        {/* Botão com clique mais convidativo, cantos modernos e efeito de hover dinâmico */}
+        <div className="mt-8">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:scale-105 active:scale-95"
           >
-            Go home
+            🚀 Resgatar meu site
           </Link>
         </div>
       </div>
+
     </div>
   );
 }
@@ -44,31 +56,38 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
-        </div>
-      </div>
+      <div className="max-w-md text-center p-4">
+  {/* Título com mais atitude */}
+  <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+    Eita, travou tudo! 🤯
+  </h1>
+  
+  {/* Mensagem descontraída e direta */}
+  <p className="mt-3 text-base text-muted-foreground leading-relaxed">
+    Algum cabo desconectou ou o sistema resolveu tirar um cochilo. Bora tentar de novo ou voltar para a segurança do início?
+  </p>
+  
+  {/* Botões com cantos modernos (rounded-xl) e efeitos de clique (hover:scale) */}
+  <div className="mt-8 flex flex-wrap justify-center gap-3">
+    <button
+      onClick={() => {
+        router.invalidate();
+        reset();
+      }}
+      className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-all hover:bg-primary/90 hover:scale-105 active:scale-95 shadow-lg shadow-primary/10"
+    >
+      🔄 Tenta de novo
+    </button>
+    
+    <a
+      href="/"
+      className="inline-flex items-center justify-center rounded-xl border-2 border-input bg-background px-6 py-3 text-sm font-bold text-foreground transition-all hover:bg-accent hover:scale-105 active:scale-95"
+    >
+      🏠 Ir pro início
+    </a>
+  </div>
+</div>
+
     </div>
   );
 }
@@ -89,7 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "Organize e dispute campeonatos de FC 26 estilo Copa do Mundo com fase de grupos e mata-mata.",
+          "Organize e dispute campeonatos de ao estilo Copa do Mundo com fase de grupos e mata-mata.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
