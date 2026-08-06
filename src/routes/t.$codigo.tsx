@@ -24,9 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  getTournamentByCode,
   registerPlayer,
-  useFcState,
   computeGroupStandings,
   getMatchWinner,
   getTieWinner,
@@ -38,6 +36,14 @@ import {
   type Match,
   type Player,
 } from "@/lib/fc-data";
+import {
+  useTournamentByCode,
+  useTeams,
+  usePlayers,
+  useMatches,
+  useRegisterPlayer,
+} from "@/lib/queries";
+import { AppFooter } from "@/components/app-footer";
 import { TeamCrest } from "@/components/team-crest";
 
 export const Route = createFileRoute("/t/$codigo")({
@@ -60,11 +66,15 @@ export const Route = createFileRoute("/t/$codigo")({
 
 function TournamentPage() {
   const { codigo } = useParams({ from: "/t/$codigo" });
-  const tournament = useFcState((s) =>
-    s.tournaments.find(
-      (t) => t.codigo_unico.toLowerCase() === codigo.toLowerCase(),
-    ),
-  );
+  const { data: tournament, isLoading } = useTournamentByCode(codigo);
+
+  if (isLoading) {
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <p className="text-sm text-muted-foreground">Carregando torneio...</p>
+      </div>
+    );
+  }
 
   if (!tournament) {
     return <NotFound codigo={codigo} />;
@@ -92,13 +102,8 @@ function NotFound({ codigo }: { codigo: string }) {
 }
 
 function TournamentInner({ tournament }: { tournament: Tournament }) {
-  const teams = useFcState((s) =>
-    s.teams.filter((t) => t.torneio_id === tournament.id),
-  );
-  const players = useFcState((s) =>
-    s.players.filter((p) => p.torneio_id === tournament.id),
-  );
-
+  const { data: teams = [] } = useTeams(tournament.id);
+  const { data: players = [] } = usePlayers(tournament.id);
   const inscritos = teams.filter((t) => t.ocupado).length;
 
   const copyLink = async () => {
@@ -201,14 +206,14 @@ function TournamentInner({ tournament }: { tournament: Tournament }) {
           </TabsContent>
 
           <TabsContent value="grupos" className="mt-6">
-            <PublicGroups tournament={tournament} teams={teams} />
+            <PublicGroups tournament={tournament} teams={teams} players={players} />
             <p className="mt-4 text-center text-xs text-muted-foreground">
               {players.length} jogador(es) confirmado(s)
             </p>
           </TabsContent>
 
           <TabsContent value="mata" className="mt-6">
-            <PublicBracket tournament={tournament} teams={teams} />
+            <PublicBracket tournament={tournament} teams={teams} players={players} />
           </TabsContent>
 
           <TabsContent value="regulamento" className="mt-6">
@@ -223,6 +228,7 @@ function TournamentInner({ tournament }: { tournament: Tournament }) {
           </TabsContent>
         </Tabs>
       </main>
+      <AppFooter />
     </div>
   );
 }
@@ -309,15 +315,11 @@ function ScoreRow({ match, teams, players }: { match: Match; teams: Map<string, 
   );
 }
 
-function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
-  const matches = useFcState((s) =>
-    s.matches.filter((m) => m.torneio_id === tournament.id && m.fase === "grupos"),
-  );
-  const players = useFcState((s) =>
-    s.players.filter((p) => p.torneio_id === tournament.id),
-  );
+function PublicGroups({ tournament, teams, players: playersProp }: { tournament: Tournament; teams: Team[]; players: Player[] }) {
+  const { data: matches = [] } = useMatches(tournament.id);
+  const groupMatches = matches.filter((m) => m.fase === "grupos");
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
-  const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
+  const playerByTeam = useMemo(() => new Map(playersProp.map((p) => [p.time_id, p])), [playersProp]);
   const anyGroup = teams.some((t) => t.grupo);
   const directKO = tournament.max_jogadores <= 4;
 
@@ -344,7 +346,7 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {GRUPOS.map((g) => {
-        const standings = computeGroupStandings(tournament.id, g);
+        const standings = computeGroupStandings(groupMatches, teams, tournament.id, g);
         if (standings.length === 0) return null;
         const gm = matches.filter((m) => m.grupo === g).sort((a, b) => a.ordem - b.ordem);
         return (
@@ -406,15 +408,11 @@ function PublicGroups({ tournament, teams }: { tournament: Tournament; teams: Te
   );
 }
 
-function PublicBracket({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
-  const matches = useFcState((s) =>
-    s.matches.filter((m) => m.torneio_id === tournament.id && m.fase !== "grupos"),
-  );
-  const players = useFcState((s) =>
-    s.players.filter((p) => p.torneio_id === tournament.id),
-  );
+function PublicBracket({ tournament, teams, players: playersProp }: { tournament: Tournament; teams: Team[]; players: Player[] }) {
+  const { data: allMatches = [] } = useMatches(tournament.id);
+  const matches = allMatches.filter((m) => m.fase !== "grupos");
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
-  const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
+  const playerByTeam = useMemo(() => new Map(playersProp.map((p) => [p.time_id, p])), [playersProp]);
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
@@ -507,13 +505,12 @@ function RegistrationForm({
     [teams],
   );
 
-  const players = useFcState((s) =>
-    s.players.filter((p) => p.torneio_id === tournament.id),
-  );
+  const { data: players = [] } = usePlayers(tournament.id);
   const playerByTeam = useMemo(
     () => new Map(players.map((p) => [p.time_id, p])),
     [players],
   );
+  const registerMutation = useRegisterPlayer(tournament.id, tournament.codigo_unico);
 
   const regStatus = useMemo(() => isRegistrationOpen(tournament), [tournament]);
   const freeTeams = activeTeams.filter((t) => !t.ocupado);
@@ -534,7 +531,7 @@ function RegistrationForm({
     return `+55 (${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim() || !nick.trim()) {
       toast.error("Preencha nome e gamertag");
@@ -549,7 +546,7 @@ function RegistrationForm({
       return;
     }
 
-    const res = registerPlayer({
+    const res = await registerMutation.mutateAsync({
       torneio_id: tournament.id,
       nome_completo: nome.trim(),
       gamertag_nick: nick.trim(),
@@ -732,9 +729,9 @@ function RegistrationForm({
       <Button
         type="submit"
         className="h-12 w-full bg-primary text-base font-bold text-primary-foreground shadow-[var(--shadow-neon)] hover:bg-primary-glow"
-        disabled={locked}
+        disabled={locked || registerMutation.isPending}
       >
-        Confirmar inscrição
+        {registerMutation.isPending ? "Confirmando..." : "Confirmar inscrição"}
       </Button>
 
       <Dialog open={!!confirmed} onOpenChange={(o) => !o && setConfirmed(null)}>

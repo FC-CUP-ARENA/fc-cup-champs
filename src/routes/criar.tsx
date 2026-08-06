@@ -40,7 +40,8 @@ import {
   COMPETITIONS,
   type CatalogTeam,
 } from "@/lib/team-catalog";
-import { createTournament } from "@/lib/fc-data";
+import { useCreateTournament } from "@/lib/queries";
+import { AppFooter } from "@/components/app-footer";
 import {
   formatTournamentCode,
   formatMasterKey,
@@ -110,6 +111,7 @@ function CreateTournamentPage() {
   const [selectedTeams, setSelectedTeams] = useState<CatalogTeam[]>([]);
   const [search, setSearch] = useState("");
   const [created, setCreated] = useState<{ codigo: string; chave: string } | null>(null);
+  const createTournamentMutation = useCreateTournament();
 
   const competition = useMemo(
     () => COMPETITIONS.find((c) => c.id === compId) ?? COMPETITIONS[0],
@@ -140,7 +142,7 @@ function CreateTournamentPage() {
     }
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canCreate) {
       if (!isMaxValid) {
@@ -155,7 +157,7 @@ function CreateTournamentPage() {
       return;
     }
 
-    const res = createTournament({
+    const res = await createTournamentMutation.mutateAsync({
       nome: nome.trim(),
       codigo_unico: codigo.trim(),
       chave_mestra_admin: chave.trim(),
@@ -568,13 +570,14 @@ function CreateTournamentPage() {
             <Button
               type="submit"
               className="h-12 w-full bg-primary text-base font-bold text-primary-foreground shadow-[var(--shadow-neon)] hover:bg-primary-glow"
-              disabled={!canCreate}
+              disabled={!canCreate || createTournamentMutation.isPending}
             >
-              <Trophy className="mr-2 h-5 w-5" /> Criar Torneio
+              <Trophy className="mr-2 h-5 w-5" /> {createTournamentMutation.isPending ? "Criando..." : "Criar Torneio"}
             </Button>
           </div>
         </form>
       </main>
+      <AppFooter />
     </div>
   );
 }

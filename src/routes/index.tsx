@@ -1,13 +1,15 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, Trophy, Users, Zap, Plus } from "lucide-react";
+import { ArrowRight, Users, Zap, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { getTournamentByCode, useFcState } from "@/lib/fc-data";
+import { useTournaments, useTeams } from "@/lib/queries";
+import type { Tournament } from "@/lib/fc-data";
+import { AppFooter } from "@/components/app-footer";
 import { formatTournamentCode } from "@/lib/code-utils";
 import logoUrl from '../assets/logo_fc-cup-arena.png'
 
@@ -17,20 +19,22 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const navigate = useNavigate();
-  const tournaments = useFcState((s) => s.tournaments);
-  const teams = useFcState((s) => s.teams);
+  const { data: tournaments = [], isLoading } = useTournaments();
   const [code, setCode] = useState("");
 
-  const onAccess = (e: React.FormEvent) => {
+  const onAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    const t = getTournamentByCode(code.trim());
-    if (!t) {
+    const trimmed = code.trim().toUpperCase();
+    const found = tournaments.find(
+      (t) => t.codigo_unico.toUpperCase() === trimmed,
+    );
+    if (!found) {
       toast.error("Torneio não encontrado", {
         description: "Verifique o código e tente novamente.",
       });
       return;
     }
-    navigate({ to: "/t/$codigo", params: { codigo: t.codigo_unico } });
+    navigate({ to: "/t/$codigo", params: { codigo: found.codigo_unico } });
   };
 
   return (
@@ -114,48 +118,19 @@ function Home() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
+          {isLoading && (
+            <p className="col-span-2 text-center text-sm text-muted-foreground">Carregando torneios...</p>
+          )}
           {tournaments.map((t) => {
-            const tTeams = teams.filter((x) => x.torneio_id === t.id);
-            const inscritos = tTeams.filter((x) => x.ocupado).length;
             return (
-              <Card
-                key={t.id}
-                onClick={() =>
-                  navigate({ to: "/t/$codigo", params: { codigo: t.codigo_unico } })
-                }
-                className="group cursor-pointer border-border bg-card p-4 transition hover:border-primary/60 hover:shadow-[var(--shadow-neon)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h4 className="truncate font-display text-base font-bold text-foreground">
-                      {t.nome}
-                    </h4>
-                    <p className="mt-1 font-mono text-xs text-muted-foreground">
-                      {t.codigo_unico}
-                    </p>
-                  </div>
-                  <StatusBadge status={t.status} />
-                </div>
-                <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5" />
-                    {inscritos}/{t.max_jogadores} vagas
-                  </span>
-                  <span className="font-semibold text-primary opacity-0 transition group-hover:opacity-100">
-                    Acessar →
-                  </span>
-                </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${(inscritos / t.max_jogadores) * 100}%` }}
-                  />
-                </div>
-              </Card>
+              <TournamentCard key={t.id} tournament={t} onClick={() =>
+                navigate({ to: "/t/$codigo", params: { codigo: t.codigo_unico } })
+              } />
             );
           })}
         </div>
       </section>
+      <AppFooter />
     </div>
   );
 }
@@ -182,5 +157,50 @@ function StatusBadge({ status }: { status: string }) {
     >
       {m.label}
     </span>
+  );
+}
+
+function TournamentCard({
+  tournament,
+  onClick,
+}: {
+  tournament: Tournament;
+  onClick: () => void;
+}) {
+  const { data: teams = [] } = useTeams(tournament.id);
+  const inscritos = teams.filter((t) => t.ocupado).length;
+
+  return (
+    <Card
+      onClick={onClick}
+      className="group cursor-pointer border-border bg-card p-4 transition hover:border-primary/60 hover:shadow-[var(--shadow-neon)]"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h4 className="truncate font-display text-base font-bold text-foreground">
+            {tournament.nome}
+          </h4>
+          <p className="mt-1 font-mono text-xs text-muted-foreground">
+            {tournament.codigo_unico}
+          </p>
+        </div>
+        <StatusBadge status={tournament.status} />
+      </div>
+      <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <Users className="h-3.5 w-3.5" />
+          {inscritos}/{tournament.max_jogadores} vagas
+        </span>
+        <span className="font-semibold text-primary opacity-0 transition group-hover:opacity-100">
+          Acessar →
+        </span>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full bg-primary transition-all"
+          style={{ width: `${(inscritos / tournament.max_jogadores) * 100}%` }}
+        />
+      </div>
+    </Card>
   );
 }

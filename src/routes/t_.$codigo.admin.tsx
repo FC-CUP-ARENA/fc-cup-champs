@@ -26,26 +26,31 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  useFcState,
-  setTournamentStatus,
-  updateRegulamento,
-  deleteTournament,
-  toggleTeamAtivo,
-  deletePlayer,
-  fillWithBots,
-  saveMatchScore,
-  launchWO,
+  useTournamentByCode,
+  useTeams,
+  usePlayers,
+  useMatches,
+  useSetTournamentStatus,
+  useUpdateRegulamento,
+  useSetRegistrationDeadline,
+  useDeleteTournament,
+  useToggleTeamAtivo,
+  useDeletePlayer,
+  useFillWithBots,
+  useSaveMatchScore,
+  useLaunchWO,
+  useSetMatchDate,
+  useDrawGroups,
+  useDrawDirectKnockout,
+  useClearGroups,
+  useGenerateGroupMatches,
+  useSetTeamGroup,
+} from "@/lib/queries";
+import {
   computeGroupStandings,
   getTieWinner,
   calcularIdade,
-  drawGroups,
-  drawDirectKnockout,
-  clearGroups,
-  generateGroupMatches,
-  setTeamGroup,
-  setMatchDate,
   hasTournamentStarted,
-  setRegistrationDeadline,
   GRUPOS,
   type Tournament,
   type Match,
@@ -53,6 +58,7 @@ import {
   type Player,
 } from "@/lib/fc-data";
 import { TeamCrest } from "@/components/team-crest";
+import { AppFooter } from "@/components/app-footer";
 
 type Search = { key?: string };
 
@@ -81,9 +87,7 @@ export const Route = createFileRoute("/t_/$codigo/admin")({
 function AdminPage() {
   const { codigo } = useParams({ from: "/t_/$codigo/admin" });
   const { key } = useSearch({ from: "/t_/$codigo/admin" });
-  const tournament = useFcState((s) =>
-    s.tournaments.find((t) => t.codigo_unico.toLowerCase() === codigo.toLowerCase()),
-  );
+  const { data: tournament, isLoading } = useTournamentByCode(codigo);
 
   const [unlocked, setUnlocked] = useState(false);
   const [input, setInput] = useState("");
@@ -93,6 +97,14 @@ function AdminPage() {
       setUnlocked(true);
     }
   }, [tournament, key]);
+
+  if (isLoading) {
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <p className="text-sm text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
 
   if (!tournament) {
     return (
@@ -151,9 +163,9 @@ function AdminPage() {
 }
 
 function AdminInner({ tournament }: { tournament: Tournament }) {
-  const teams = useFcState((s) => s.teams.filter((t) => t.torneio_id === tournament.id));
-  const players = useFcState((s) => s.players.filter((p) => p.torneio_id === tournament.id));
-  const matches = useFcState((s) => s.matches.filter((m) => m.torneio_id === tournament.id));
+  const { data: teams = [] } = useTeams(tournament.id);
+  const { data: players = [] } = usePlayers(tournament.id);
+  const { data: matches = [] } = useMatches(tournament.id);
 
   const copySecretLink = async () => {
     const url = typeof window !== "undefined"
@@ -218,16 +230,22 @@ function AdminInner({ tournament }: { tournament: Tournament }) {
           </TabsContent>
         </Tabs>
       </main>
+      <AppFooter />
     </div>
   );
 }
-
-/* ---- Config ---- */
 function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
   const [reg, setReg] = useState(tournament.regulamento_texto);
   const [deadline, setDeadline] = useState<string>(tournament.data_limite_inscricoes ?? "");
-  const started = useFcState((s) => hasTournamentStarted(tournament.id));
+  const { data: matches = [] } = useMatches(tournament.id);
+  const started = hasTournamentStarted(matches, tournament.id);
   const navigate = useNavigate();
+
+  const setStatusMutation = useSetTournamentStatus(tournament.id, tournament.codigo_unico);
+  const updateRegMutation = useUpdateRegulamento(tournament.id, tournament.codigo_unico);
+  const setDeadlineMutation = useSetRegistrationDeadline(tournament.id, tournament.codigo_unico);
+  const deleteTournamentMutation = useDeleteTournament();
+  const toggleTeamMutation = useToggleTeamAtivo(tournament.id);
 
   return (
     <>
@@ -241,8 +259,13 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
                 key={s}
                 size="sm"
                 variant={tournament.status === s ? "default" : "outline"}
-                disabled={locked}
-                onClick={() => { setTournamentStatus(tournament.id, s); toast.success("Status atualizado"); }}
+                disabled={locked || setStatusMutation.isPending}
+                onClick={() => {
+                  setStatusMutation.mutate(s, {
+                    onSuccess: () => toast.success("Status atualizado"),
+                    onError: (e) => toast.error(e.message),
+                  });
+                }}
                 className={tournament.status === s ? "bg-primary text-primary-foreground hover:bg-primary-glow" : ""}
                 title={locked ? "Inscrições encerradas: o torneio já começou" : undefined}
               >
@@ -268,8 +291,9 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
             type="datetime-local"
             value={deadline ? toLocalInput(deadline) : ""}
             onChange={(e) => {
-              setDeadline(e.target.value);
-              setRegistrationDeadline(tournament.id, e.target.value ? new Date(e.target.value).toISOString() : null);
+              const val = e.target.value;
+              setDeadline(val);
+              setDeadlineMutation.mutate(val ? new Date(val).toISOString() : null);
             }}
             className="h-9 max-w-xs text-sm"
           />
@@ -277,7 +301,12 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => { setDeadline(""); setRegistrationDeadline(tournament.id, null); toast.success("Data limite removida"); }}
+              onClick={() => {
+                setDeadline("");
+                setDeadlineMutation.mutate(null, {
+                  onSuccess: () => toast.success("Data limite removida"),
+                });
+              }}
               className="text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               Remover data limite
@@ -297,9 +326,15 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
         <Button
           size="sm"
           className="mt-3 bg-primary text-primary-foreground hover:bg-primary-glow"
-          onClick={() => { updateRegulamento(tournament.id, reg); toast.success("Regulamento salvo"); }}
+          disabled={updateRegMutation.isPending}
+          onClick={() => {
+            updateRegMutation.mutate(reg, {
+              onSuccess: () => toast.success("Regulamento salvo"),
+              onError: (e) => toast.error(e.message),
+            });
+          }}
         >
-          <Save className="mr-1 h-3.5 w-3.5" /> Salvar regulamento
+          <Save className="mr-1 h-3.5 w-3.5" /> {updateRegMutation.isPending ? "Salvando..." : "Salvar regulamento"}
         </Button>
       </Card>
 
@@ -326,9 +361,13 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
-                  deleteTournament(tournament.id);
-                  toast.success("Torneio excluído");
-                  navigate({ to: "/" });
+                  deleteTournamentMutation.mutate(tournament.id, {
+                    onSuccess: () => {
+                      toast.success("Torneio excluído");
+                      navigate({ to: "/" });
+                    },
+                    onError: (e) => toast.error(e.message),
+                  });
                 }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
@@ -354,7 +393,10 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
                   {t.ocupado && <div className="text-[10px] uppercase tracking-widest text-destructive">Ocupado</div>}
                 </div>
               </div>
-              <Switch checked={t.ativo_pelo_admin} onCheckedChange={(v) => toggleTeamAtivo(t.id, v)} />
+              <Switch
+                checked={t.ativo_pelo_admin}
+                onCheckedChange={(v) => toggleTeamMutation.mutate({ teamId: t.id, ativo: v })}
+              />
             </div>
           ))}
         </div>
@@ -368,6 +410,9 @@ function InscritosPanel({
   tournament, teams, players,
 }: { tournament: Tournament; teams: Team[]; players: Player[] }) {
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const deletePlayerMutation = useDeletePlayer(tournament.id);
+  const fillBotsMutation = useFillWithBots(tournament.id);
+
   return (
     <Card className="border-border bg-card p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -376,8 +421,11 @@ function InscritosPanel({
         </h3>
         <Button
           size="sm" variant="outline"
-          onClick={() => { fillWithBots(tournament.id); toast.success("Vagas preenchidas com BOTs"); }}
-          disabled={players.length >= tournament.max_jogadores}
+          onClick={() => fillBotsMutation.mutate(
+            { tournament, players, teams },
+            { onSuccess: () => toast.success("Vagas preenchidas com BOTs"), onError: (e) => toast.error(e.message) },
+          )}
+          disabled={players.length >= tournament.max_jogadores || fillBotsMutation.isPending}
           className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
         >
           <Bot className="mr-1 h-3.5 w-3.5" /> Preencher com BOT/W.O.
@@ -417,7 +465,10 @@ function InscritosPanel({
                   <TableCell className="text-right">
                     <Button
                       size="sm" variant="ghost"
-                      onClick={() => { deletePlayer(p.id); toast.success("Inscrito removido"); }}
+                      onClick={() => deletePlayerMutation.mutate(p.id, {
+                        onSuccess: () => toast.success("Inscrito removido"),
+                        onError: (e) => toast.error(e.message),
+                      })}
                       className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -440,7 +491,7 @@ function InscritosPanel({
 function GroupsPanel({
   tournament, teams, matches,
 }: { tournament: Tournament; teams: Team[]; matches: Match[] }) {
-  const players = useFcState((s) => s.players.filter((p) => p.torneio_id === tournament.id));
+  const { data: players = [] } = usePlayers(tournament.id);
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const groupMatches = matches.filter((m) => m.fase === "grupos");
@@ -458,7 +509,7 @@ function GroupsPanel({
       )}
       <div className="grid gap-6 lg:grid-cols-2">
       {(["A", "B", "C", "D"] as const).map((g) => {
-        const standings = computeGroupStandings(tournament.id, g);
+        const standings = computeGroupStandings(groupMatches, teams, tournament.id, g);
         const gm = groupMatches.filter((m) => m.grupo === g).sort((a, b) => a.ordem - b.ordem);
         if (standings.length === 0) return null;
         return (
@@ -512,7 +563,7 @@ function GroupsPanel({
             </div>
             <div className="mt-4 space-y-2">
               {gm.map((m) => (
-                <MatchCard key={m.id} match={m} teams={teamMap} />
+                <MatchCard key={m.id} match={m} teams={teamMap} tournament={tournament} allMatches={matches} />
               ))}
             </div>
           </Card>
@@ -529,6 +580,9 @@ function DirectKnockoutManager({
 }: { tournament: Tournament; teams: Team[]; matches: Match[] }) {
   const inscritos = teams.filter((t) => t.ocupado && t.ativo_pelo_admin);
   const semis = matches.filter((m) => m.fase === "semi");
+  const drawKOMutation = useDrawDirectKnockout(tournament.id);
+  const clearMutation = useClearGroups(tournament.id);
+
   return (
     <Card className="border-border bg-card p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -538,11 +592,11 @@ function DirectKnockoutManager({
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
-            onClick={() => {
-              const res = drawDirectKnockout(tournament.id);
-              if (!res.ok) toast.error(res.error || "Erro");
-              else toast.success("Semifinais sorteadas");
-            }}
+            disabled={drawKOMutation.isPending}
+            onClick={() => drawKOMutation.mutate(
+              { tournament, teams },
+              { onSuccess: () => toast.success("Semifinais sorteadas"), onError: (e) => toast.error(e.message) },
+            )}
             className="bg-primary text-primary-foreground hover:bg-primary-glow"
           >
             <Shuffle className="mr-1 h-3.5 w-3.5" /> Sortear semifinais
@@ -550,7 +604,11 @@ function DirectKnockoutManager({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => { clearGroups(tournament.id); toast.success("Chaveamento limpo"); }}
+            disabled={clearMutation.isPending}
+            onClick={() => clearMutation.mutate(undefined, {
+              onSuccess: () => toast.success("Chaveamento limpo"),
+              onError: (e) => toast.error(e.message),
+            })}
             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             <Eraser className="mr-1 h-3.5 w-3.5" /> Limpar
@@ -582,9 +640,15 @@ function DirectKnockoutManager({
 }
 
 function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
-  const players = useFcState((s) => s.players.filter((p) => p.torneio_id === tournament.id));
+  const { data: players = [] } = usePlayers(tournament.id);
   const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const inscritos = teams.filter((t) => t.ocupado && t.ativo_pelo_admin);
+
+  const drawGroupsMutation = useDrawGroups(tournament.id);
+  const generateMatchesMutation = useGenerateGroupMatches(tournament.id);
+  const clearMutation = useClearGroups(tournament.id);
+  const setGroupMutation = useSetTeamGroup(tournament.id);
+
   return (
     <Card className="border-border bg-card p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -594,7 +658,11 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
-            onClick={() => { drawGroups(tournament.id); toast.success("Grupos sorteados e partidas geradas"); }}
+            disabled={drawGroupsMutation.isPending}
+            onClick={() => drawGroupsMutation.mutate(
+              { tournament, teams },
+              { onSuccess: () => toast.success("Grupos sorteados e partidas geradas"), onError: (e) => toast.error(e.message) },
+            )}
             className="bg-primary text-primary-foreground hover:bg-primary-glow"
           >
             <Shuffle className="mr-1 h-3.5 w-3.5" /> Sortear grupos
@@ -602,18 +670,28 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
           <Button
             size="sm"
             variant="outline"
-            onClick={() => {
-              const res = generateGroupMatches(tournament.id);
-              if (!res.ok) toast.error(res.error || "Erro");
-              else toast.success("Partidas geradas");
-            }}
+            disabled={generateMatchesMutation.isPending}
+            onClick={() => generateMatchesMutation.mutate(
+              { tournament, teams },
+              {
+                onSuccess: (res) => {
+                  if (!res.ok) toast.error(res.error || "Erro");
+                  else toast.success("Partidas geradas");
+                },
+                onError: (e) => toast.error(e.message),
+              },
+            )}
           >
             <RefreshCw className="mr-1 h-3.5 w-3.5" /> Gerar partidas
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => { clearGroups(tournament.id); toast.success("Grupos limpos"); }}
+            disabled={clearMutation.isPending}
+            onClick={() => clearMutation.mutate(undefined, {
+              onSuccess: () => toast.success("Grupos limpos"),
+              onError: (e) => toast.error(e.message),
+            })}
             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             <Eraser className="mr-1 h-3.5 w-3.5" /> Limpar
@@ -637,7 +715,10 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
             </div>
             <Select
               value={t.grupo ?? "none"}
-              onValueChange={(v) => setTeamGroup(t.id, v === "none" ? null : (v as "A"))}
+              onValueChange={(v) => setGroupMutation.mutate({
+                teamId: t.id,
+                grupo: v === "none" ? null : (v as "A"),
+              })}
             >
               <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -659,7 +740,7 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
 function BracketPanel({
   tournament, teams, matches,
 }: { tournament: Tournament; teams: Team[]; matches: Match[] }) {
-  const players = useFcState((s) => s.players.filter((p) => p.torneio_id === tournament.id));
+  const { data: players = [] } = usePlayers(tournament.id);
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const playerByTeam = useMemo(() => new Map(players.map((p) => [p.time_id, p])), [players]);
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
@@ -683,17 +764,26 @@ function BracketPanel({
   return (
     <div className={`grid gap-4 ${directKO ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
       {!directKO && (
-        <BracketColumn title="Quartas de Final" matches={q} teams={teamMap} players={playerByTeam} />
+        <BracketColumn title="Quartas de Final" matches={q} teams={teamMap} players={playerByTeam} tournament={tournament} allMatches={matches} />
       )}
-      <BracketColumn title="Semifinal" matches={s} teams={teamMap} players={playerByTeam} placeholder="Aguardando quartas" />
-      <BracketColumn title="Final" matches={f} teams={teamMap} players={playerByTeam} placeholder="Aguardando semifinal" champion />
+      <BracketColumn title="Semifinal" matches={s} teams={teamMap} players={playerByTeam} placeholder="Aguardando quartas" tournament={tournament} allMatches={matches} />
+      <BracketColumn title="Final" matches={f} teams={teamMap} players={playerByTeam} placeholder="Aguardando semifinal" champion tournament={tournament} allMatches={matches} />
     </div>
   );
 }
 
 function BracketColumn({
-  title, matches, teams, players, placeholder, champion,
-}: { title: string; matches: Match[]; teams: Map<string, Team>; players: Map<string, Player>; placeholder?: string; champion?: boolean }) {
+  title, matches, teams, players, placeholder, champion, tournament, allMatches,
+}: {
+  title: string;
+  matches: Match[];
+  teams: Map<string, Team>;
+  players: Map<string, Player>;
+  placeholder?: string;
+  champion?: boolean;
+  tournament: Tournament;
+  allMatches: Match[];
+}) {
   return (
     <div>
       <h3 className="mb-2 font-display text-sm font-bold uppercase tracking-widest text-primary">{title}</h3>
@@ -702,7 +792,7 @@ function BracketColumn({
           <div className="rounded-lg border border-dashed border-border bg-card/40 p-4 text-center text-xs text-muted-foreground">{placeholder}</div>
         )}
         {matches.map((m) => (
-          <MatchCard key={m.id} match={m} teams={teams} players={players} />
+          <MatchCard key={m.id} match={m} teams={teams} players={players} tournament={tournament} allMatches={allMatches} />
         ))}
         {champion && matches.length > 0 && getTieWinner(matches) && (
           <Card className="border-primary/40 bg-primary/10 p-4 text-center shadow-[var(--shadow-neon)]">
@@ -720,13 +810,23 @@ function BracketColumn({
 }
 
 /* ---- Match Card ---- */
-function MatchCard({ match, teams, players }: { match: Match; teams: Map<string, Team>; players?: Map<string, Player> }) {
+function MatchCard({ match, teams, players, tournament, allMatches }: {
+  match: Match;
+  teams: Map<string, Team>;
+  players?: Map<string, Player>;
+  tournament: Tournament;
+  allMatches: Match[];
+}) {
   const [gm, setGm] = useState<string>(match.gols_mandante?.toString() ?? "");
   const [gv, setGv] = useState<string>(match.gols_visitante?.toString() ?? "");
   const [pm, setPm] = useState<string>(match.penaltis_mandante?.toString() ?? "");
   const [pv, setPv] = useState<string>(match.penaltis_visitante?.toString() ?? "");
   const [data, setData] = useState<string>(match.data_jogo ?? "");
   const [woOpen, setWoOpen] = useState(false);
+
+  const saveScoreMutation = useSaveMatchScore(match.torneio_id);
+  const launchWOMutation = useLaunchWO(match.torneio_id);
+  const setDateMutation = useSetMatchDate(match.torneio_id);
 
   useEffect(() => {
     setGm(match.gols_mandante?.toString() ?? "");
@@ -738,7 +838,11 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
 
   const isKO = match.fase !== "grupos";
   const tied = gm !== "" && gv !== "" && Number(gm) === Number(gv);
-  const showPens = isKO && tied && (match.perna == null || match.perna === 2);
+  // Mostra pênaltis em KO empatado quando:
+  // - formato jogo_unico: sempre
+  // - formato ida_e_volta: só na volta (perna 2)
+  const isJogoUnico = tournament.formato_mata_mata === "jogo_unico";
+  const showPens = isKO && tied && (isJogoUnico || match.perna === 2);
 
   const mandante = teams.get(match.time_mandante_id);
   const visitante = teams.get(match.time_visitante_id);
@@ -747,13 +851,21 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
 
   const save = () => {
     if (gm === "" || gv === "") { toast.error("Preencha o placar"); return; }
-    const res = saveMatchScore(
-      match.id, Number(gm), Number(gv),
-      showPens && pm !== "" ? Number(pm) : null,
-      showPens && pv !== "" ? Number(pv) : null,
+    saveScoreMutation.mutate(
+      {
+        match, allMatches, tournament,
+        gm: Number(gm), gv: Number(gv),
+        pm: showPens && pm !== "" ? Number(pm) : null,
+        pv: showPens && pv !== "" ? Number(pv) : null,
+      },
+      {
+        onSuccess: (res) => {
+          if (!res.ok) toast.error(res.error || "Erro");
+          else toast.success("Placar salvo");
+        },
+        onError: (e) => toast.error(e.message),
+      },
     );
-    if (!res.ok) toast.error(res.error || "Erro");
-    else toast.success("Placar salvo");
   };
 
   return (
@@ -766,7 +878,7 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
           {match.perna === 1 ? "Jogo de ida" : "Jogo de volta"}
         </p>
       )}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <TeamCrest src={mandante?.escudo_url ?? ""} alt={mandante?.nome ?? ""} size={24} />
@@ -774,10 +886,22 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
           </div>
           <span className="truncate pl-7 text-[10px] text-muted-foreground">{mandante?.nome}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <Input value={gm} onChange={(e) => setGm(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
-          <span className="text-xs text-muted-foreground">x</span>
-          <Input value={gv} onChange={(e) => setGv(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-1">
+            <Input value={gm} onChange={(e) => setGm(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
+            <span className="text-xs text-muted-foreground">x</span>
+            <Input value={gv} onChange={(e) => setGv(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
+          </div>
+          {showPens && (
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-[9px] uppercase tracking-widest text-muted-foreground">pênaltis</span>
+              <div className="flex items-center gap-1">
+                <Input value={pm} onChange={(e) => setPm(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
+                <span className="text-xs text-muted-foreground">x</span>
+                <Input value={pv} onChange={(e) => setPv(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col items-end gap-0.5">
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
@@ -788,15 +912,6 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
         </div>
       </div>
 
-      {showPens && (
-        <div className="mt-2 flex items-center justify-center gap-2">
-          <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Pênaltis</Label>
-          <Input value={pm} onChange={(e) => setPm(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
-          <span className="text-xs text-muted-foreground">x</span>
-          <Input value={pv} onChange={(e) => setPv(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
-        </div>
-      )}
-
       <div className="mt-2 flex items-center gap-2">
         <Label className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0">Data</Label>
         <Input
@@ -804,7 +919,10 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
           value={data ? toLocalInput(data) : ""}
           onChange={(e) => {
             setData(e.target.value);
-            setMatchDate(match.id, e.target.value ? new Date(e.target.value).toISOString() : null);
+            setDateMutation.mutate({
+              matchId: match.id,
+              data_jogo: e.target.value ? new Date(e.target.value).toISOString() : null,
+            });
           }}
           className="h-7 flex-1 text-xs"
         />
@@ -820,8 +938,8 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
           <Button size="sm" variant="ghost" onClick={() => setWoOpen(true)} className="h-7 text-[10px] text-destructive hover:bg-destructive/10 hover:text-destructive">
             W.O.
           </Button>
-          <Button size="sm" onClick={save} className="h-7 bg-primary text-[10px] text-primary-foreground hover:bg-primary-glow">
-            <Save className="mr-1 h-3 w-3" /> Salvar
+          <Button size="sm" onClick={save} disabled={saveScoreMutation.isPending} className="h-7 bg-primary text-[10px] text-primary-foreground hover:bg-primary-glow">
+            <Save className="mr-1 h-3 w-3" /> {saveScoreMutation.isPending ? "..." : "Salvar"}
           </Button>
         </div>
       </div>
@@ -833,13 +951,23 @@ function MatchCard({ match, teams, players }: { match: Match; teams: Map<string,
             <DialogDescription>Selecione quem vence por W.O. (3x0).</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => { launchWO(match.id, "mandante"); toast.success("W.O. registrado"); setWoOpen(false); }}>
+            <Button variant="outline" onClick={() => {
+              launchWOMutation.mutate(
+                { match, allMatches, tournament, vencedor: "mandante" },
+                { onSuccess: () => { toast.success("W.O. registrado"); setWoOpen(false); }, onError: (e) => toast.error(e.message) },
+              );
+            }}>
               <div className="text-left">
                 <div className="font-bold">{pa?.gamertag_nick ?? mandante?.nome}</div>
                 <div className="text-[10px] font-normal text-muted-foreground">{mandante?.nome}</div>
               </div>
             </Button>
-            <Button variant="outline" onClick={() => { launchWO(match.id, "visitante"); toast.success("W.O. registrado"); setWoOpen(false); }}>
+            <Button variant="outline" onClick={() => {
+              launchWOMutation.mutate(
+                { match, allMatches, tournament, vencedor: "visitante" },
+                { onSuccess: () => { toast.success("W.O. registrado"); setWoOpen(false); }, onError: (e) => toast.error(e.message) },
+              );
+            }}>
               <div className="text-left">
                 <div className="font-bold">{pVis?.gamertag_nick ?? visitante?.nome}</div>
                 <div className="text-[10px] font-normal text-muted-foreground">{visitante?.nome}</div>
