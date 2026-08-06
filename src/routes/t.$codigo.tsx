@@ -120,7 +120,7 @@ function TournamentInner({ tournament }: { tournament: Tournament }) {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundImage: "var(--gradient-hero)" }}>
+    <div className="flex min-h-screen flex-col" style={{ backgroundImage: "var(--gradient-hero)" }}>
       {/* Top nav */}
       <div className="border-b border-border/60">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
@@ -180,7 +180,7 @@ function TournamentInner({ tournament }: { tournament: Tournament }) {
       </header>
 
       {/* Tabs */}
-      <main className="mx-auto max-w-5xl px-4 pb-24">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24">
         <Tabs defaultValue="inscricao" className="w-full">
           <TabsList className="grid w-full grid-cols-4 bg-card">
             <TabsTrigger value="inscricao" className="gap-1 text-xs">

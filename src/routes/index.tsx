@@ -39,7 +39,7 @@ function Home() {
 
   return (
     <div
-      className="min-h-screen"
+      className="flex min-h-screen flex-col"
       style={{ backgroundImage: "var(--gradient-hero)" }}
     >
       {/* Header */}
@@ -107,7 +107,7 @@ function Home() {
       </section>
 
       {/* Torneios em destaque */}
-      <section className="mx-auto max-w-5xl px-4 pb-16">
+      <section className="mx-auto w-full max-w-5xl flex-1 px-4 pb-16">
         <div className="mb-4 flex items-baseline justify-between">
           <h3 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
             Torneios em Destaque

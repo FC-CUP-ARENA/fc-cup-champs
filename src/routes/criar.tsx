@@ -192,7 +192,7 @@ function CreateTournamentPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundImage: "var(--gradient-hero)" }}>
+    <div className="flex min-h-screen flex-col" style={{ backgroundImage: "var(--gradient-hero)" }}>
       <AlertDialog open={created !== null}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -275,7 +275,7 @@ function CreateTournamentPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 pb-24">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24">
         <form onSubmit={submit} className="space-y-6">
           {/* Configurações básicas */}
           <Card className="border-border bg-card p-5">

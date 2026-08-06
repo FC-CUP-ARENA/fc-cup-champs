@@ -178,7 +178,7 @@ function AdminInner({ tournament }: { tournament: Tournament }) {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundImage: "var(--gradient-hero)" }}>
+    <div className="flex min-h-screen flex-col" style={{ backgroundImage: "var(--gradient-hero)" }}>
       <div className="border-b border-border/60">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link to="/t/$codigo" params={{ codigo: tournament.codigo_unico }} className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground">
@@ -207,7 +207,7 @@ function AdminInner({ tournament }: { tournament: Tournament }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-24">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24">
         <Tabs defaultValue="config" className="w-full">
           <TabsList className="grid w-full grid-cols-4 bg-card">
             <TabsTrigger value="config" className="text-xs">Configuração</TabsTrigger>
