@@ -45,6 +45,8 @@ import {
 } from "@/lib/queries";
 import { AppFooter } from "@/components/app-footer";
 import { TeamCrest } from "@/components/team-crest";
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 
 export const Route = createFileRoute("/t/$codigo")({
   head: ({ params }) => ({
@@ -525,50 +527,6 @@ function RegistrationForm({
       ? "Não há mais times disponíveis para inscrição."
       : null;
 
-const formatPhone = (raw: string) => {
-  // Remove tudo que não for dígito
-  let digits = raw.replace(/\D/g, "");
-
-  // Se o usuário apagou tudo, limpa o campo
-  if (digits.length === 0) return "";
-
-  // Se começou a digitar e NÃO digitou o código de país, assume que precisa do "+"
-  // O retorno sempre começará com "+"
-  let formatted = `+${digits}`;
-
-  // Se for o Brasil (DDI 55)
-  if (digits.startsWith("55")) {
-    const brDigits = digits.slice(2); // Remove o 55 para formatar o resto
-    
-    if (brDigits.length === 0) return "+55";
-    if (brDigits.length <= 2) return `+55 (${brDigits}`;
-    if (brDigits.length <= 6) return `+55 (${brDigits.slice(0, 2)}) ${brDigits.slice(2)}`;
-    
-    // Limita o Brasil a 11 dígitos locais (55 + 11 = 13 total)
-    const limitedBr = brDigits.slice(0, 11);
-    const isCell = limitedBr.length === 11;
-    const cutoff = isCell ? 7 : 6;
-    
-    return `+55 (${limitedBr.slice(0, 2)}) ${limitedBr.slice(2, cutoff)}-${limitedBr.slice(cutoff)}`;
-  }
-
-  // --- REGRA INTERNACIONAL (Outros Países) ---
-  // Como DDI internacional varia de 1 a 4 dígitos e o tamanho do número muda,
-  // uma máscara fixa destrói o número. Separamos blocos visualmente:
-  if (digits.length <= 3) {
-    return `+${digits}`;
-  }
-  if (digits.length <= 7) {
-    return `+${digits.slice(0, 3)} ${digits.slice(3)}`;
-  }
-  if (digits.length <= 11) {
-    return `+${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7)}`;
-  }
-  // Limita a um teto internacional padrão de 15 dígitos (máximo oficial do padrão E.164)
-  const safeDigits = digits.slice(0, 15);
-  return `+${safeDigits.slice(0, 3)} ${safeDigits.slice(3, 7)} ${safeDigits.slice(7, 11)} ${safeDigits.slice(11)}`;
-};
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim() || !nick.trim()) {
@@ -684,20 +642,31 @@ const formatPhone = (raw: string) => {
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="cel">
-              Celular <span className="text-muted-foreground">(opcional)</span>
-            </Label>
-            <Input
-              id="cel"
-              value={celular}
-              onChange={(e) => setCelular(formatPhone(e.target.value))}
-              placeholder="+55 (19) 98765-4321"
-              className="mt-1.5 font-mono"
-              inputMode="tel"
-              disabled={locked}
-            />
-          </div>
+<div>
+  <Label htmlFor="cel">
+    Celular <span className="text-muted-foreground">(opcional)</span>
+  </Label>
+  
+    <div className="mt-1.5 flex h-10 w-full rounded-md border-[0.5px] border-input bg-background text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:opacity-50">
+    <PhoneInput
+      defaultCountry="br"
+      value={celular}
+      onChange={(phone) => setCelular(phone)}
+      disabled={locked}
+      
+      // Alinha os componentes internamente ocupando 100% do container
+      className="w-full font-mono flex items-center"
+      
+      // Remove todas as bordas e fundos nativos do campo de texto
+      inputClassName="!w-full !h-full !border-0 !bg-transparent !text-foreground !px-3 !py-2 !text-sm focus:!outline-none focus:!ring-0 disabled:!cursor-not-allowed"
+      
+      // Remove as bordas do botão da bandeirinha e arredonda apenas o canto esquerdo interno
+      countrySelectorStyleProps={{
+        buttonClassName: "!h-full !w-12 !border-0 !bg-transparent !rounded-l-md hover:!bg-accent/50 transition-colors disabled:!opacity-50",
+      }}
+    />
+  </div>
+</div>
         </div>
       </Card>
 
