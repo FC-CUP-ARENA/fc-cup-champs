@@ -10,6 +10,12 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -334,58 +340,65 @@ function AddTeamsCard({ tournamentId, existingTeams }: { tournamentId: string; e
         />
       </div>
 
-      <div className="mb-4 space-y-4">
-        {competition.grupos.map((cont) => {
+      <Accordion type="multiple" className="mb-4">
+        {competition.grupos.map((cont, idx) => {
           const filtered = cont.times.filter((t) =>
             t.nome.toLowerCase().includes(search.toLowerCase()),
           );
           if (filtered.length === 0) return null;
           return (
-            <div key={cont.nome}>
-              <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                <Globe className="h-3 w-3" /> {cont.nome}
-              </p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                {filtered.map((team) => {
-                  const isSelected = selected.some((t) => t.nome === team.nome);
-                  const alreadyIn = existingNames.has(team.nome);
-                  return (
-                    <button
-                      key={team.nome}
-                      type="button"
-                      disabled={alreadyIn}
-                      onClick={() => toggleTeam(team)}
-                      className={[
-                        "group relative flex items-center gap-2 rounded-xl border p-2.5 text-left transition",
-                        isSelected
-                          ? "border-primary bg-primary/15 shadow-[var(--shadow-neon)]"
-                          : alreadyIn
-                            ? "cursor-not-allowed border-border bg-muted/30 opacity-40"
-                            : "border-border bg-background/40 hover:border-primary/50 hover:bg-primary/5",
-                      ].join(" ")}
-                    >
-                      <TeamCrest src={team.escudo} alt={team.nome} size={28} />
-                      <span className="min-w-0 flex-1">
-                        <span className="line-clamp-1 text-xs font-bold text-foreground">
-                          {team.nome}
+            <AccordionItem key={cont.nome} value={`grupo-${idx}`} className="border-border">
+              <AccordionTrigger className="hover:no-underline">
+                <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <Globe className="h-3.5 w-3.5 text-primary" /> {cont.nome}
+                  <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground">
+                    {filtered.length}
+                  </span>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                  {filtered.map((team) => {
+                    const isSelected = selected.some((t) => t.nome === team.nome);
+                    const alreadyIn = existingNames.has(team.nome);
+                    return (
+                      <button
+                        key={team.nome}
+                        type="button"
+                        disabled={alreadyIn}
+                        onClick={() => toggleTeam(team)}
+                        className={[
+                          "group relative flex items-center gap-2 rounded-xl border p-2.5 text-left transition",
+                          isSelected
+                            ? "border-primary bg-primary/15 shadow-[var(--shadow-neon)]"
+                            : alreadyIn
+                              ? "cursor-not-allowed border-border bg-muted/30 opacity-40"
+                              : "border-border bg-background/40 hover:border-primary/50 hover:bg-primary/5",
+                        ].join(" ")}
+                      >
+                        <TeamCrest src={team.escudo} alt={team.nome} size={28} />
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-1 text-xs font-bold text-foreground">
+                            {team.nome}
+                          </span>
                         </span>
-                      </span>
-                      {isSelected && (
-                        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
-                          <Check className="h-3 w-3" />
-                        </span>
-                      )}
-                      {alreadyIn && !isSelected && (
-                        <span className="text-[9px] font-bold uppercase text-muted-foreground">no torneio</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                        {isSelected && (
+                          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+                            <Check className="h-3 w-3" />
+                          </span>
+                        )}
+                        {alreadyIn && !isSelected && (
+                          <span className="text-[9px] font-bold uppercase text-muted-foreground">no torneio</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           );
         })}
-      </div>
+      </Accordion>
 
       {selected.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
