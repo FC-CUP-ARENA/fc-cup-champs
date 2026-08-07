@@ -108,7 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "Organize e dispute campeonatos de ao estilo Copa do Mundo com fase de grupos e mata-mata.",
+          "Organize e dispute campeonatos ao estilo Copa do Mundo com fase de grupos e mata-mata.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

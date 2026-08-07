@@ -1,4 +1,4 @@
-const APP_VERSION = "0.1.10";
+const APP_VERSION = "0.1.12+1";
 
 export function AppFooter() {
   const year = new Date().getFullYear();

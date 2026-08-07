@@ -502,7 +502,7 @@ function RegistrationForm({
     "07", "08", "09", "10", "11", "12",
   ];
   const anoAtual = new Date().getFullYear();
-  const anos = Array.from({ length: 60 }, (_, i) => String(anoAtual - 12 - i));
+  const anos = Array.from({ length: 60 }, (_, i) => String(anoAtual - 8 - i));
 
   const activeTeams = useMemo(
     () => teams.filter((t) => t.ativo_pelo_admin),
