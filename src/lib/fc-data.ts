@@ -377,6 +377,48 @@ export async function createTournament(
   return { ok: true, tournament };
 }
 
+export async function addTeams(
+  torneio_id: string,
+  newTeams: Array<{ nome: string; escudo_url: string }>,
+): Promise<{ ok: true; added: number } | { ok: false; error: string }> {
+  if (newTeams.length === 0) return { ok: false, error: "Selecione ao menos um time." };
+
+  const { data: existing, error: fetchErr } = await supabase
+    .from("teams")
+    .select("nome")
+    .eq("torneio_id", torneio_id);
+  if (fetchErr) return { ok: false, error: fetchErr.message };
+
+  const existingNames = new Set((existing ?? []).map((t) => t.nome));
+  const filtered = newTeams.filter((t) => !existingNames.has(t.nome));
+  if (filtered.length === 0) return { ok: false, error: "Todos os times selecionados já estão no torneio." };
+
+  const teams: Team[] = filtered.map((t, i) => ({
+    id: `${torneio_id}-team-${Date.now()}-${i}`,
+    torneio_id,
+    nome: t.nome,
+    escudo_url: t.escudo_url,
+    ativo_pelo_admin: true,
+    ocupado: false,
+    grupo: null,
+  }));
+
+  const { error: teErr } = await supabase.from("teams").insert(teams);
+  if (teErr) return { ok: false, error: teErr.message };
+
+  const { data: tourney, error: tErr } = await supabase
+    .from("tournaments")
+    .select("max_jogadores")
+    .eq("id", torneio_id)
+    .single();
+  if (!tErr && tourney) {
+    const newMax = tourney.max_jogadores + filtered.length;
+    await supabase.from("tournaments").update({ max_jogadores: newMax }).eq("id", torneio_id);
+  }
+
+  return { ok: true, added: filtered.length };
+}
+
 export async function setTournamentStatus(
   id: string,
   status: Tournament["status"],

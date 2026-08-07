@@ -148,6 +148,7 @@ import {
   drawDirectKnockout,
   clearGroups,
   generateGroupMatches,
+  addTeams,
   type Tournament as TournamentType,
   type Team as TeamType,
   type Match as MatchType,
@@ -339,5 +340,17 @@ export function useGenerateGroupMatches(torneio_id: string) {
     mutationFn: ({ tournament, teams }: { tournament: TournamentType; teams: TeamType[] }) =>
       generateGroupMatches(tournament, teams),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.matches(torneio_id) }),
+  });
+}
+
+export function useAddTeams(torneio_id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ newTeams }: { newTeams: Array<{ nome: string; escudo_url: string }> }) =>
+      addTeams(torneio_id, newTeams),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.teams(torneio_id) });
+      qc.invalidateQueries({ queryKey: qk.tournament(torneio_id) });
+    },
   });
 }
