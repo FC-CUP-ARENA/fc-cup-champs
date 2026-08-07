@@ -99,6 +99,17 @@ export function calcularIdade(mesAno: string): number | null {
   return idade;
 }
 
+export type CategoriaIdade = "sub10" | "sub12" | "sub15" | "pro";
+
+export function calcularCategoria(mesAno: string): CategoriaIdade | null {
+  const idade = calcularIdade(mesAno);
+  if (idade === null) return null;
+  if (idade <= 10) return "sub10";
+  if (idade <= 12) return "sub12";
+  if (idade <= 15) return "sub15";
+  return "pro";
+}
+
 function winnerOf(m: Match): string | null {
   if (m.status !== "concluido" && m.status !== "wo") return null;
   const gm = m.gols_mandante ?? 0;

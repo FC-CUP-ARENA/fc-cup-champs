@@ -57,6 +57,8 @@ import {
   computeGroupStandings,
   getTieWinner,
   calcularIdade,
+  calcularCategoria,
+  type CategoriaIdade,
   hasTournamentStarted,
   GRUPOS,
   type Tournament,
@@ -246,6 +248,24 @@ function AdminInner({ tournament }: { tournament: Tournament }) {
     </div>
   );
 }
+const CATEGORIA_STYLES: Record<CategoriaIdade, { label: string; className: string }> = {
+  sub10: { label: "Sub10", className: "border-sky-400/40 bg-sky-400/10 text-sky-600" },
+  sub12: { label: "Sub12", className: "border-emerald-400/40 bg-emerald-400/10 text-emerald-600" },
+  sub15: { label: "Sub15", className: "border-amber-400/40 bg-amber-400/10 text-amber-600" },
+  pro: { label: "Pro", className: "border-primary/40 bg-primary/10 text-primary" },
+};
+
+function CategoriaBadge({ mesAno }: { mesAno: string }) {
+  const cat = calcularCategoria(mesAno);
+  if (!cat) return null;
+  const style = CATEGORIA_STYLES[cat];
+  return (
+    <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${style.className}`}>
+      {style.label}
+    </span>
+  );
+}
+
 function AddTeamsCard({ tournamentId, existingTeams }: { tournamentId: string; existingTeams: Team[] }) {
   const addTeamsMutation = useAddTeams(tournamentId);
   const [compId, setCompId] = useState<string>(COMPETITIONS[0].id);
@@ -648,7 +668,12 @@ function InscritosPanel({
               const idade = calcularIdade(p.mes_ano_nascimento);
               return (
                 <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.nome_completo}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-1.5">
+                      {p.nome_completo}
+                      <CategoriaBadge mesAno={p.mes_ano_nascimento} />
+                    </div>
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{p.gamertag_nick}</TableCell>
                   <TableCell>{idade ?? "—"}</TableCell>
                   <TableCell className="font-mono text-xs">{p.celular || "—"}</TableCell>
