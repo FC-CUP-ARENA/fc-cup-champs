@@ -266,6 +266,16 @@ function CategoriaBadge({ mesAno }: { mesAno: string }) {
   );
 }
 
+function GamertagWithCategory({ player, className }: { player: Player | undefined | null; className?: string }) {
+  if (!player) return <span className={className}>—</span>;
+  return (
+    <span className={`inline-flex items-center gap-1 ${className ?? ""}`}>
+      <span className="truncate">{player.gamertag_nick}</span>
+      <CategoriaBadge mesAno={player.mes_ano_nascimento} />
+    </span>
+  );
+}
+
 function AddTeamsCard({ tournamentId, existingTeams }: { tournamentId: string; existingTeams: Team[] }) {
   const addTeamsMutation = useAddTeams(tournamentId);
   const [compId, setCompId] = useState<string>(COMPETITIONS[0].id);
@@ -669,17 +679,15 @@ function InscritosPanel({
               return (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.nome_completo}</TableCell>
-                  <TableCell className="font-mono text-xs">{p.gamertag_nick}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    <GamertagWithCategory player={p} />
+                  </TableCell>
                   <TableCell>{idade ?? "—"}</TableCell>
                   <TableCell className="font-mono text-xs">{p.celular || "—"}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
                       <TeamCrest src={team?.escudo_url ?? ""} alt={team?.nome ?? ""} size={24} />
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 truncate text-xs font-bold">
-                          {p.gamertag_nick}
-                          <CategoriaBadge mesAno={p.mes_ano_nascimento} />
-                        </div>
                         <div className="truncate text-[10px] text-muted-foreground">{team?.nome}</div>
                       </div>
                     </div>
@@ -763,7 +771,11 @@ function GroupsPanel({
                           <div className="flex items-center gap-1.5">
                             <TeamCrest src={t?.escudo_url ?? ""} alt={t?.nome ?? ""} size={20} />
                             <div className="min-w-0">
-                              <div className="truncate text-xs font-bold">{p?.gamertag_nick ?? t?.nome}</div>
+                              {p ? (
+                                <GamertagWithCategory player={p} className="truncate text-xs font-bold" />
+                              ) : (
+                                <div className="truncate text-xs font-bold">{t?.nome}</div>
+                              )}
                               <div className="truncate text-[10px] text-muted-foreground">{t?.nome}</div>
                             </div>
                             {classifica && <Badge className="ml-1 bg-primary/20 text-primary hover:bg-primary/20">Classificado</Badge>}
@@ -931,7 +943,11 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
             <div className="flex min-w-0 items-center gap-2">
               <TeamCrest src={t.escudo_url} alt={t.nome} size={28} />
               <div className="min-w-0">
-                <div className="truncate text-sm font-bold">{p?.gamertag_nick ?? t.nome}</div>
+                {p ? (
+                  <GamertagWithCategory player={p} className="truncate text-sm font-bold" />
+                ) : (
+                  <div className="truncate text-sm font-bold">{t.nome}</div>
+                )}
                 <div className="truncate text-[10px] text-muted-foreground">{t.nome}</div>
               </div>
             </div>
@@ -1021,7 +1037,16 @@ function BracketColumn({
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <p className="mt-1 text-[10px] uppercase tracking-widest text-primary">Campeão</p>
             <p className="mt-1 font-display text-lg font-black">
-              <TeamCrest src={teams.get(getTieWinner(matches)!)?.escudo_url ?? ""} alt={teams.get(getTieWinner(matches)!)?.nome ?? ""} size={28} className="mr-1 inline-block align-middle" /> {players.get(getTieWinner(matches)!)?.gamertag_nick ?? teams.get(getTieWinner(matches)!)?.nome}
+              <TeamCrest src={teams.get(getTieWinner(matches)!)?.escudo_url ?? ""} alt={teams.get(getTieWinner(matches)!)?.nome ?? ""} size={28} className="mr-1 inline-block align-middle" />{" "}
+              {(() => {
+                const championId = getTieWinner(matches)!;
+                const championPlayer = players.get(championId);
+                return championPlayer ? (
+                  <GamertagWithCategory player={championPlayer} className="font-display text-lg font-black" />
+                ) : (
+                  <span className="font-display text-lg font-black">{teams.get(championId)?.nome}</span>
+                );
+              })()}
             </p>
             <p className="text-xs text-muted-foreground">{teams.get(getTieWinner(matches)!)?.nome}</p>
           </Card>
@@ -1100,39 +1125,47 @@ function MatchCard({ match, teams, players, tournament, allMatches }: {
           {match.perna === 1 ? "Jogo de ida" : "Jogo de volta"}
         </p>
       )}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <TeamCrest src={mandante?.escudo_url ?? ""} alt={mandante?.nome ?? ""} size={24} />
-            <span className="truncate text-sm font-semibold">{pa?.gamertag_nick ?? mandante?.nome}</span>
-          </div>
-          <span className="truncate pl-7 text-[10px] text-muted-foreground">{mandante?.nome}</span>
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-1">
-            <Input value={gm} onChange={(e) => setGm(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
-            <span className="text-xs text-muted-foreground">x</span>
-            <Input value={gv} onChange={(e) => setGv(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
-          </div>
-          {showPens && (
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="text-[9px] uppercase tracking-widest text-muted-foreground">pênaltis</span>
-              <div className="flex items-center gap-1">
-                <Input value={pm} onChange={(e) => setPm(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
-                <span className="text-xs text-muted-foreground">x</span>
-                <Input value={pv} onChange={(e) => setPv(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <TeamCrest src={mandante?.escudo_url ?? ""} alt={mandante?.nome ?? ""} size={24} />
+                {pa ? (
+                  <GamertagWithCategory player={pa} className="truncate text-sm font-semibold" />
+                ) : (
+                  <span className="truncate text-sm font-semibold">{mandante?.nome}</span>
+                )}
               </div>
+              <span className="truncate pl-7 text-[10px] text-muted-foreground">{mandante?.nome}</span>
             </div>
-          )}
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col items-end gap-0.5">
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-            <span className="truncate text-right text-sm font-semibold">{pVis?.gamertag_nick ?? visitante?.nome}</span>
-            <TeamCrest src={visitante?.escudo_url ?? ""} alt={visitante?.nome ?? ""} size={24} />
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-1">
+                <Input value={gm} onChange={(e) => setGm(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
+                <span className="text-xs text-muted-foreground">x</span>
+                <Input value={gv} onChange={(e) => setGv(e.target.value.replace(/\D/g, ""))} className="h-8 w-11 text-center font-mono" inputMode="numeric" />
+              </div>
+              {showPens && (
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground">pênaltis</span>
+                  <div className="flex items-center gap-1">
+                    <Input value={pm} onChange={(e) => setPm(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
+                    <span className="text-xs text-muted-foreground">x</span>
+                    <Input value={pv} onChange={(e) => setPv(e.target.value.replace(/\D/g, ""))} className="h-7 w-11 text-center font-mono" inputMode="numeric" />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col items-end gap-0.5">
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+                {pVis ? (
+                  <GamertagWithCategory player={pVis} className="truncate text-right text-sm font-semibold" />
+                ) : (
+                  <span className="truncate text-right text-sm font-semibold">{visitante?.nome}</span>
+                )}
+                <TeamCrest src={visitante?.escudo_url ?? ""} alt={visitante?.nome ?? ""} size={24} />
+              </div>
+              <span className="truncate pr-7 text-[10px] text-muted-foreground">{visitante?.nome}</span>
+            </div>
           </div>
-          <span className="truncate pr-7 text-[10px] text-muted-foreground">{visitante?.nome}</span>
-        </div>
-      </div>
 
       <div className="mt-2 flex items-center gap-2">
         <Label className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0">Data</Label>
@@ -1180,7 +1213,11 @@ function MatchCard({ match, teams, players, tournament, allMatches }: {
               );
             }}>
               <div className="text-left">
-                <div className="font-bold">{pa?.gamertag_nick ?? mandante?.nome}</div>
+                {pa ? (
+                  <GamertagWithCategory player={pa} className="font-bold" />
+                ) : (
+                  <div className="font-bold">{mandante?.nome}</div>
+                )}
                 <div className="text-[10px] font-normal text-muted-foreground">{mandante?.nome}</div>
               </div>
             </Button>
@@ -1191,7 +1228,11 @@ function MatchCard({ match, teams, players, tournament, allMatches }: {
               );
             }}>
               <div className="text-left">
-                <div className="font-bold">{pVis?.gamertag_nick ?? visitante?.nome}</div>
+                {pVis ? (
+                  <GamertagWithCategory player={pVis} className="font-bold" />
+                ) : (
+                  <div className="font-bold">{visitante?.nome}</div>
+                )}
                 <div className="text-[10px] font-normal text-muted-foreground">{visitante?.nome}</div>
               </div>
             </Button>

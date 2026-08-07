@@ -40,6 +40,7 @@ export interface Database {
           data_limite_inscricoes?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       teams: {
         Row: {
@@ -72,6 +73,7 @@ export interface Database {
           grupo?: "A" | "B" | "C" | "D" | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       players: {
         Row: {
@@ -104,6 +106,7 @@ export interface Database {
           celular?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       matches: {
         Row: {
@@ -160,7 +163,12 @@ export interface Database {
           data_jogo?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
+    Views: {};
+    Functions: {};
+    Enums: {};
+    CompositeTypes: {};
   };
 }
