@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Copy, KeyRound, Trash2, Bot, Save, TriangleAlert as AlertTriangle, Trophy, Shuffle, RefreshCw, Eraser } from "lucide-react";
+import { ArrowLeft, Copy, KeyRound, Trash2, Bot, Save, TriangleAlert as AlertTriangle, Trophy, Shuffle, RefreshCw, Eraser, Search, Check, X, Globe, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,7 @@ import {
   useClearGroups,
   useGenerateGroupMatches,
   useSetTeamGroup,
+  useAddTeams,
 } from "@/lib/queries";
 import {
   computeGroupStandings,
@@ -60,6 +61,7 @@ import {
 import { TeamCrest } from "@/components/team-crest";
 import { AppFooter } from "@/components/app-footer";
 import { formatMasterKey } from "@/lib/code-utils";
+import { COMPETITIONS, type CatalogTeam } from "@/lib/team-catalog";
 
 type Search = { key?: string };
 
@@ -238,6 +240,187 @@ function AdminInner({ tournament }: { tournament: Tournament }) {
     </div>
   );
 }
+function AddTeamsCard({ tournamentId, existingTeams }: { tournamentId: string; existingTeams: Team[] }) {
+  const addTeamsMutation = useAddTeams(tournamentId);
+  const [compId, setCompId] = useState<string>(COMPETITIONS[0].id);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<CatalogTeam[]>([]);
+
+  const competition = useMemo(
+    () => COMPETITIONS.find((c) => c.id === compId) ?? COMPETITIONS[0],
+    [compId],
+  );
+
+  const existingNames = useMemo(
+    () => new Set(existingTeams.map((t) => t.nome)),
+    [existingTeams],
+  );
+
+  const toggleTeam = (team: CatalogTeam) => {
+    const exists = selected.some((t) => t.nome === team.nome);
+    if (exists) {
+      setSelected(selected.filter((t) => t.nome !== team.nome));
+    } else {
+      setSelected([...selected, team]);
+    }
+  };
+
+  const submit = async () => {
+    if (selected.length === 0) {
+      toast.error("Selecione ao menos um time");
+      return;
+    }
+    const res = await addTeamsMutation.mutateAsync({
+      newTeams: selected.map((t) => ({ nome: t.nome, escudo_url: t.escudo })),
+    });
+    if (!res.ok) {
+      toast.error("Erro ao adicionar times", { description: res.error });
+      return;
+    }
+    toast.success(`${res.added} time(s) adicionado(s)`);
+    setSelected([]);
+    setSearch("");
+  };
+
+  return (
+    <Card className="border-border bg-card p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-display text-sm font-bold uppercase tracking-widest text-primary">
+          Adicionar Times
+        </h3>
+        {selected.length > 0 && (
+          <Badge className="bg-primary text-primary-foreground">
+            {selected.length} selecionado(s)
+          </Badge>
+        )}
+      </div>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Adicione novos times ao torneio após a criação. Os times adicionados ficam disponíveis para inscrição.
+      </p>
+
+      <div className="mb-4">
+        <Label className="mb-2 flex items-center gap-1.5 text-xs">
+          <Globe className="h-3.5 w-3.5 text-primary" /> Competição / Liga
+        </Label>
+        <div className="flex flex-wrap gap-2">
+          {COMPETITIONS.map((comp) => (
+            <button
+              key={comp.id}
+              type="button"
+              onClick={() => {
+                setCompId(comp.id);
+                setSearch("");
+              }}
+              className={[
+                "rounded-lg border px-3 py-1.5 text-xs font-semibold transition",
+                compId === comp.id
+                  ? "border-primary bg-primary/15 text-primary shadow-[var(--shadow-neon)]"
+                  : "border-border bg-background/40 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+              ].join(" ")}
+            >
+              {comp.nome}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar time..."
+          className="pl-9"
+        />
+      </div>
+
+      <div className="mb-4 space-y-4">
+        {competition.grupos.map((cont) => {
+          const filtered = cont.times.filter((t) =>
+            t.nome.toLowerCase().includes(search.toLowerCase()),
+          );
+          if (filtered.length === 0) return null;
+          return (
+            <div key={cont.nome}>
+              <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <Globe className="h-3 w-3" /> {cont.nome}
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                {filtered.map((team) => {
+                  const isSelected = selected.some((t) => t.nome === team.nome);
+                  const alreadyIn = existingNames.has(team.nome);
+                  return (
+                    <button
+                      key={team.nome}
+                      type="button"
+                      disabled={alreadyIn}
+                      onClick={() => toggleTeam(team)}
+                      className={[
+                        "group relative flex items-center gap-2 rounded-xl border p-2.5 text-left transition",
+                        isSelected
+                          ? "border-primary bg-primary/15 shadow-[var(--shadow-neon)]"
+                          : alreadyIn
+                            ? "cursor-not-allowed border-border bg-muted/30 opacity-40"
+                            : "border-border bg-background/40 hover:border-primary/50 hover:bg-primary/5",
+                      ].join(" ")}
+                    >
+                      <TeamCrest src={team.escudo} alt={team.nome} size={28} />
+                      <span className="min-w-0 flex-1">
+                        <span className="line-clamp-1 text-xs font-bold text-foreground">
+                          {team.nome}
+                        </span>
+                      </span>
+                      {isSelected && (
+                        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="h-3 w-3" />
+                        </span>
+                      )}
+                      {alreadyIn && !isSelected && (
+                        <span className="text-[9px] font-bold uppercase text-muted-foreground">no torneio</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {selected.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {selected.map((team) => (
+            <span
+              key={team.nome}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-semibold"
+            >
+              <TeamCrest src={team.escudo} alt={team.nome} size={20} />
+              {team.nome}
+              <button
+                type="button"
+                onClick={() => toggleTeam(team)}
+                className="ml-0.5 text-muted-foreground hover:text-destructive"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <Button
+        type="button"
+        onClick={submit}
+        disabled={selected.length === 0 || addTeamsMutation.isPending}
+        className="w-full bg-primary text-primary-foreground shadow-[var(--shadow-neon)] hover:bg-primary-glow"
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        {addTeamsMutation.isPending ? "Adicionando..." : `Adicionar ${selected.length || ""} time(s)`}
+      </Button>
+    </Card>
+  );
+}
+
 function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Team[] }) {
   const [reg, setReg] = useState(tournament.regulamento_texto);
   const [deadline, setDeadline] = useState<string>(tournament.data_limite_inscricoes ?? "");
@@ -285,11 +468,10 @@ function ConfigPanel({ tournament, teams }: { tournament: Tournament; teams: Tea
         )}
       </Card>
 
+      <AddTeamsCard tournamentId={tournament.id} existingTeams={teams} />
+
       <Card className="border-border bg-card p-5">
         <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-widest text-primary">Data Limite de Inscrição</h3>
-        <p className="mb-3 text-xs text-muted-foreground">
-          Defina até quando os jogadores podem se inscrever. Após essa data, o formulário público fica bloqueado.
-        </p>
         <div className="flex flex-wrap items-center gap-2">
           <Input
             type="datetime-local"
