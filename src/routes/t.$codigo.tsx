@@ -30,7 +30,7 @@ import {
   getTieWinner,
   formatMatchDate,
   isRegistrationOpen,
-  GRUPOS,
+  groupsOf,
   type Team,
   type Tournament,
   type Match,
@@ -349,7 +349,7 @@ function PublicGroups({ tournament, teams, players: playersProp }: { tournament:
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {GRUPOS.map((g) => {
+      {groupsOf(tournament).map((g) => {
         const standings = computeGroupStandings(groupMatches, teams, tournament.id, g);
         if (standings.length === 0) return null;
         const gm = matches.filter((m) => m.grupo === g).sort((a, b) => a.ordem - b.ordem);
@@ -420,6 +420,7 @@ function PublicBracket({ tournament, teams, players: playersProp }: { tournament
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
+  const tl = matches.filter((m) => m.fase === "terceiro").sort((a, b) => a.ordem - b.ordem);
   const directKO = tournament.max_jogadores <= 4;
 
   if (q.length === 0 && (!directKO || s.length === 0)) {
@@ -473,6 +474,18 @@ function PublicBracket({ tournament, teams, players: playersProp }: { tournament
           </div>
         ))}
       </div>
+      {tl.length > 0 && (
+        <div>
+          <h3 className="mb-2 font-display text-sm font-bold uppercase tracking-widest text-primary">
+            Disputa de 3º Lugar
+          </h3>
+          <div className="space-y-2">
+            {tl.map((m) => (
+              <ScoreRow key={m.id} match={m} teams={teamMap} players={playerByTeam} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

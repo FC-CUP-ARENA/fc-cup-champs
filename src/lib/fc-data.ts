@@ -14,6 +14,8 @@ export type Tournament = {
   formato_mata_mata: "jogo_unico" | "ida_e_volta";
   status: "inscricoes_abertas" | "em_andamento" | "finalizado";
   data_limite_inscricoes?: string | null;
+  num_grupos?: number | null;
+  chaveamento_config?: BracketConfig | null;
 };
 
 export type Team = {
@@ -23,7 +25,7 @@ export type Team = {
   escudo_url: string;
   ativo_pelo_admin: boolean;
   ocupado: boolean;
-  grupo?: "A" | "B" | "C" | "D" | null;
+  grupo?: Grupo | null;
 };
 
 export type Player = {
@@ -39,8 +41,8 @@ export type Player = {
 export type Match = {
   id: string;
   torneio_id: string;
-  fase: "grupos" | "quartas" | "semi" | "final";
-  grupo?: "A" | "B" | "C" | "D" | null;
+  fase: "grupos" | "quartas" | "semi" | "final" | "terceiro";
+  grupo?: Grupo | null;
   ordem: number;
   chave?: string | null;
   perna?: 1 | 2 | null;
@@ -60,8 +62,73 @@ export type Standing = {
   GP: number; GC: number; SG: number;
 };
 
-export const GRUPOS = ["A", "B", "C", "D"] as const;
+export const GRUPOS = ["A", "B", "C", "D", "E", "F", "G", "H"] as const;
 export type Grupo = (typeof GRUPOS)[number];
+
+/** Uma vaga do chaveamento: posição `pos` (1 = 1º colocado) do grupo `grupo`. */
+export type Seed = { grupo: Grupo; pos: number };
+export type BracketPair = { a: Seed; b: Seed };
+export type BracketConfig = {
+  pares: BracketPair[];
+  terceiro_lugar: boolean;
+};
+
+/** Grupos efetivamente usados pelo torneio. */
+export function groupsOf(tournament: Pick<Tournament, "num_grupos">): Grupo[] {
+  const n = Math.min(Math.max(tournament.num_grupos ?? 4, 1), GRUPOS.length);
+  return GRUPOS.slice(0, n) as Grupo[];
+}
+
+/** Chaveamento padrão: 1º de um grupo x 2º do grupo seguinte (cruzado). */
+export function defaultBracketConfig(
+  numGrupos: number,
+  terceiro_lugar = true,
+): BracketConfig {
+  const gs = GRUPOS.slice(0, Math.min(Math.max(numGrupos, 1), GRUPOS.length)) as Grupo[];
+  const pares: BracketPair[] = [];
+  if (gs.length === 1) {
+    pares.push({ a: { grupo: gs[0], pos: 1 }, b: { grupo: gs[0], pos: 2 } });
+  } else {
+    for (let i = 0; i < gs.length; i++) {
+      const other = gs[(i + 1) % gs.length];
+      pares.push({ a: { grupo: gs[i], pos: 1 }, b: { grupo: other, pos: 2 } });
+    }
+  }
+  return { pares, terceiro_lugar };
+}
+
+/** Embaralha os confrontos mantendo as mesmas vagas (1º nunca enfrenta o 2º do próprio grupo quando possível). */
+export function randomizeBracketConfig(config: BracketConfig): BracketConfig {
+  const seeds: Seed[] = config.pares.flatMap((p) => [p.a, p.b]);
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const pool = [...seeds].sort(() => Math.random() - 0.5);
+    const pares: BracketPair[] = [];
+    let ok = true;
+    for (let i = 0; i < pool.length; i += 2) {
+      const a = pool[i];
+      const b = pool[i + 1];
+      if (!b) { ok = false; break; }
+      if (a.grupo === b.grupo) { ok = false; break; }
+      pares.push({ a, b });
+    }
+    if (ok) return { ...config, pares };
+  }
+  return config;
+}
+
+export function seedLabel(s: Seed): string {
+  return `${s.pos}º ${s.grupo}`;
+}
+
+export function faseLabel(fase: Match["fase"]): string {
+  switch (fase) {
+    case "grupos": return "Fase de Grupos";
+    case "quartas": return "Quartas de Final";
+    case "semi": return "Semifinal";
+    case "final": return "Final";
+    case "terceiro": return "Disputa de 3º Lugar";
+  }
+}
 
 
 // ============================================================
@@ -171,7 +238,7 @@ export function computeGroupStandings(
   matches: Match[],
   teams: Team[],
   torneio_id: string,
-  grupo: "A" | "B" | "C" | "D",
+  grupo: Grupo,
 ): Standing[] {
   const groupMatches = matches.filter(
     (m) => m.torneio_id === torneio_id && m.fase === "grupos" && m.grupo === grupo,
@@ -227,7 +294,7 @@ function isTwoLegged(tournament: Tournament): boolean {
 
 function makeTie(
   tournament: Tournament,
-  fase: "quartas" | "semi" | "final",
+  fase: "quartas" | "semi" | "final" | "terceiro",
   ordem: number,
   a: string,
   b: string,
@@ -248,7 +315,64 @@ function makeTie(
     penaltis_visitante: null,
     status: "pendente",
   });
-  return isTwoLegged(tournament) ? [base(1, a, b), base(2, b, a)] : [base(1, a, b)];
+  const twoLegs = isTwoLegged(tournament) && fase !== "terceiro";
+  return twoLegs ? [base(1, a, b), base(2, b, a)] : [base(1, a, b)];
+}
+
+function loserOfTie(legs: Match[]): string | null {
+  const w = winnerOfTie(legs);
+  if (!w) return null;
+  const first = legs[0];
+  if (!first) return null;
+  return first.time_mandante_id === w ? first.time_visitante_id : first.time_mandante_id;
+}
+
+/** Configuração de chaveamento efetiva do torneio (com fallback para o padrão). */
+export function bracketConfigOf(tournament: Tournament): BracketConfig {
+  const cfg = tournament.chaveamento_config;
+  if (cfg && Array.isArray(cfg.pares) && cfg.pares.length > 0) {
+    return { pares: cfg.pares, terceiro_lugar: !!cfg.terceiro_lugar };
+  }
+  return defaultBracketConfig(tournament.num_grupos ?? 4, true);
+}
+
+/** Resolve as vagas do chaveamento em ids de times, a partir das classificações atuais. */
+export function resolveBracketSeeds(
+  tournament: Tournament,
+  matches: Match[],
+  teams?: Team[],
+): Array<{ pair: BracketPair; aId: string | null; bId: string | null }> {
+  const torneio_id = tournament.id;
+  const groupMatches = matches.filter((m) => m.torneio_id === torneio_id && m.fase === "grupos");
+  const cfg = bracketConfigOf(tournament);
+  const cache = new Map<Grupo, ReturnType<typeof computeGroupStandings>>();
+
+  const standingsOf = (g: Grupo) => {
+    if (cache.has(g)) return cache.get(g)!;
+    let stTeams: Team[] = (teams ?? []).filter((t) => t.torneio_id === torneio_id && t.grupo === g);
+    if (stTeams.length === 0) {
+      const ids = new Set<string>();
+      groupMatches.filter((m) => m.grupo === g).forEach((m) => {
+        ids.add(m.time_mandante_id);
+        ids.add(m.time_visitante_id);
+      });
+      stTeams = [...ids].map((id) => ({
+        id, torneio_id, nome: "", escudo_url: "", ativo_pelo_admin: true, ocupado: true, grupo: g,
+      }));
+    }
+    const st = computeGroupStandings(groupMatches, stTeams, torneio_id, g);
+    cache.set(g, st);
+    return st;
+  };
+
+  const resolve = (s: Seed) => standingsOf(s.grupo)[s.pos - 1]?.time_id ?? null;
+  return cfg.pares.map((pair) => ({ pair, aId: resolve(pair.a), bId: resolve(pair.b) }));
+}
+
+function firstKnockoutFase(nPares: number): "quartas" | "semi" | "final" {
+  if (nPares >= 4) return "quartas";
+  if (nPares === 2) return "semi";
+  return "final";
 }
 
 /** Calcula as partidas de avanço de chave que precisam ser inseridas no Supabase. */
@@ -264,6 +388,7 @@ export function computeBracketAdvances(
   }
 
   const newMatches: Match[] = [];
+  const cfg = bracketConfigOf(tournament);
 
   if (directKO) {
     const semis = tiesOf("semi");
@@ -272,43 +397,37 @@ export function computeBracketAdvances(
       newMatches.push(
         ...makeTie(tournament, "final", 0, winnerOfTie(semis[0])!, winnerOfTie(semis[1])!),
       );
+      if (cfg.terceiro_lugar) {
+        const l1 = loserOfTie(semis[0]);
+        const l2 = loserOfTie(semis[1]);
+        if (l1 && l2) newMatches.push(...makeTie(tournament, "terceiro", 1, l1, l2));
+      }
     }
     return newMatches;
   }
 
-  const hasQF = matches.some((m) => m.torneio_id === torneio_id && m.fase === "quartas");
+  const koStarted = matches.some((m) => m.torneio_id === torneio_id && m.fase !== "grupos");
   const groupMatches = matches.filter((m) => m.torneio_id === torneio_id && m.fase === "grupos");
   const allGroupsDone =
     groupMatches.length > 0 && groupMatches.every((m) => m.status !== "pendente");
 
-  if (!hasQF && allGroupsDone) {
-    const teams = (["A", "B", "C", "D"] as const).map((g) => {
-      const stTeams: Team[] = [];
-      const ids = new Set<string>();
-      groupMatches.filter((m) => m.grupo === g).forEach((m) => {
-        ids.add(m.time_mandante_id);
-        ids.add(m.time_visitante_id);
-      });
-      ids.forEach((id) => stTeams.push({ id, torneio_id, nome: "", escudo_url: "", ativo_pelo_admin: true, ocupado: true, grupo: g }));
-      return computeGroupStandings(groupMatches, stTeams, torneio_id, g);
+  if (!koStarted && allGroupsDone) {
+    const resolved = resolveBracketSeeds(tournament, matches);
+    const fase = firstKnockoutFase(resolved.length);
+    resolved.forEach((r, i) => {
+      if (r.aId && r.bId) newMatches.push(...makeTie(tournament, fase, i, r.aId, r.bId));
     });
-    const [A, B, C, D] = teams;
-    newMatches.push(
-      ...makeTie(tournament, "quartas", 0, A[0].time_id, B[1].time_id),
-      ...makeTie(tournament, "quartas", 1, C[0].time_id, D[1].time_id),
-      ...makeTie(tournament, "quartas", 2, B[0].time_id, A[1].time_id),
-      ...makeTie(tournament, "quartas", 3, D[0].time_id, C[1].time_id),
-    );
     return newMatches;
   }
 
   const qfTies = tiesOf("quartas");
   const hasSF = matches.some((m) => m.torneio_id === torneio_id && m.fase === "semi");
-  if (!hasSF && qfTies.length === 4 && qfTies.every((t) => winnerOfTie(t))) {
-    newMatches.push(
-      ...makeTie(tournament, "semi", 0, winnerOfTie(qfTies[0])!, winnerOfTie(qfTies[1])!),
-      ...makeTie(tournament, "semi", 1, winnerOfTie(qfTies[2])!, winnerOfTie(qfTies[3])!),
-    );
+  if (!hasSF && qfTies.length >= 2 && qfTies.every((t) => winnerOfTie(t))) {
+    for (let i = 0; i + 1 < qfTies.length; i += 2) {
+      newMatches.push(
+        ...makeTie(tournament, "semi", i / 2, winnerOfTie(qfTies[i])!, winnerOfTie(qfTies[i + 1])!),
+      );
+    }
     return newMatches;
   }
 
@@ -318,6 +437,11 @@ export function computeBracketAdvances(
     newMatches.push(
       ...makeTie(tournament, "final", 0, winnerOfTie(sfTies[0])!, winnerOfTie(sfTies[1])!),
     );
+    if (cfg.terceiro_lugar) {
+      const l1 = loserOfTie(sfTies[0]);
+      const l2 = loserOfTie(sfTies[1]);
+      if (l1 && l2) newMatches.push(...makeTie(tournament, "terceiro", 1, l1, l2));
+    }
   }
   return newMatches;
 }
@@ -456,6 +580,43 @@ export async function setRegistrationDeadline(
 
 export async function deleteTournament(id: string): Promise<void> {
   await supabase.from("tournaments").delete().eq("id", id);
+}
+
+export async function setNumGrupos(id: string, num_grupos: number): Promise<void> {
+  await supabase.from("tournaments").update({ num_grupos }).eq("id", id);
+}
+
+export async function setBracketConfig(id: string, config: BracketConfig): Promise<void> {
+  await supabase
+    .from("tournaments")
+    .update({ chaveamento_config: config as unknown as never })
+    .eq("id", id);
+}
+
+/** Gera (ou regenera) o mata-mata a partir das classificações atuais dos grupos. */
+export async function generateKnockoutFromGroups(
+  tournament: Tournament,
+  matches: Match[],
+  teams: Team[],
+): Promise<{ ok: boolean; error?: string }> {
+  const resolved = resolveBracketSeeds(tournament, matches, teams);
+  const pending = resolved.filter((r) => !r.aId || !r.bId);
+  if (resolved.length === 0) return { ok: false, error: "Chaveamento não configurado." };
+  if (pending.length > 0)
+    return { ok: false, error: "Ainda não há classificação suficiente nos grupos para definir todos os confrontos." };
+
+  const fase = firstKnockoutFase(resolved.length);
+  const novos: Match[] = [];
+  resolved.forEach((r, i) => novos.push(...makeTie(tournament, fase, i, r.aId!, r.bId!)));
+
+  await supabase
+    .from("matches")
+    .delete()
+    .eq("torneio_id", tournament.id)
+    .neq("fase", "grupos");
+  const { error } = await supabase.from("matches").insert(novos);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 
@@ -699,7 +860,8 @@ export async function drawGroups(
   );
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const assign = new Map<string, Grupo>();
-  shuffled.forEach((t, i) => assign.set(t.id, GRUPOS[i % 4]));
+  const gs = groupsOf(tournament);
+  shuffled.forEach((t, i) => assign.set(t.id, gs[i % gs.length]));
 
   for (const [teamId, grupo] of assign.entries()) {
     await supabase.from("teams").update({ grupo }).eq("id", teamId);
@@ -730,7 +892,7 @@ export async function generateGroupMatches(
   let ordem = 0;
   let total = 0;
 
-  GRUPOS.forEach((g) => {
+  groupsOf(tournament).forEach((g) => {
     const ids = teams
       .filter((t) => t.torneio_id === torneio_id && t.grupo === g && t.ocupado)
       .map((t) => t.id);
