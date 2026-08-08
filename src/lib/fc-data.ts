@@ -238,7 +238,7 @@ export function computeGroupStandings(
   matches: Match[],
   teams: Team[],
   torneio_id: string,
-  grupo: "A" | "B" | "C" | "D",
+  grupo: Grupo,
 ): Standing[] {
   const groupMatches = matches.filter(
     (m) => m.torneio_id === torneio_id && m.fase === "grupos" && m.grupo === grupo,
@@ -580,6 +580,43 @@ export async function setRegistrationDeadline(
 
 export async function deleteTournament(id: string): Promise<void> {
   await supabase.from("tournaments").delete().eq("id", id);
+}
+
+export async function setNumGrupos(id: string, num_grupos: number): Promise<void> {
+  await supabase.from("tournaments").update({ num_grupos }).eq("id", id);
+}
+
+export async function setBracketConfig(id: string, config: BracketConfig): Promise<void> {
+  await supabase
+    .from("tournaments")
+    .update({ chaveamento_config: config as unknown as Json })
+    .eq("id", id);
+}
+
+/** Gera (ou regenera) o mata-mata a partir das classificações atuais dos grupos. */
+export async function generateKnockoutFromGroups(
+  tournament: Tournament,
+  matches: Match[],
+  teams: Team[],
+): Promise<{ ok: boolean; error?: string }> {
+  const resolved = resolveBracketSeeds(tournament, matches, teams);
+  const pending = resolved.filter((r) => !r.aId || !r.bId);
+  if (resolved.length === 0) return { ok: false, error: "Chaveamento não configurado." };
+  if (pending.length > 0)
+    return { ok: false, error: "Ainda não há classificação suficiente nos grupos para definir todos os confrontos." };
+
+  const fase = firstKnockoutFase(resolved.length);
+  const novos: Match[] = [];
+  resolved.forEach((r, i) => novos.push(...makeTie(tournament, fase, i, r.aId!, r.bId!)));
+
+  await supabase
+    .from("matches")
+    .delete()
+    .eq("torneio_id", tournament.id)
+    .neq("fase", "grupos");
+  const { error } = await supabase.from("matches").insert(novos);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 
