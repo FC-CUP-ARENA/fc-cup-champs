@@ -14,6 +14,8 @@ export interface Database {
           formato_mata_mata: "jogo_unico" | "ida_e_volta";
           status: "inscricoes_abertas" | "em_andamento" | "finalizado";
           data_limite_inscricoes: string | null;
+          num_grupos: number | null;
+          chaveamento_config: Json | null;
           created_at: string;
         };
         Insert: {
@@ -26,6 +28,8 @@ export interface Database {
           formato_mata_mata?: "jogo_unico" | "ida_e_volta";
           status?: "inscricoes_abertas" | "em_andamento" | "finalizado";
           data_limite_inscricoes?: string | null;
+          num_grupos?: number | null;
+          chaveamento_config?: Json | null;
           created_at?: string;
         };
         Update: {
@@ -38,6 +42,8 @@ export interface Database {
           formato_mata_mata?: "jogo_unico" | "ida_e_volta";
           status?: "inscricoes_abertas" | "em_andamento" | "finalizado";
           data_limite_inscricoes?: string | null;
+          num_grupos?: number | null;
+          chaveamento_config?: Json | null;
           created_at?: string;
         };
         Relationships: [];
@@ -50,7 +56,7 @@ export interface Database {
           escudo_url: string;
           ativo_pelo_admin: boolean;
           ocupado: boolean;
-          grupo: "A" | "B" | "C" | "D" | null;
+          grupo: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | null;
           created_at: string;
         };
         Insert: {
@@ -60,7 +66,7 @@ export interface Database {
           escudo_url?: string;
           ativo_pelo_admin?: boolean;
           ocupado?: boolean;
-          grupo?: "A" | "B" | "C" | "D" | null;
+          grupo?: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | null;
           created_at?: string;
         };
         Update: {
@@ -70,7 +76,7 @@ export interface Database {
           escudo_url?: string;
           ativo_pelo_admin?: boolean;
           ocupado?: boolean;
-          grupo?: "A" | "B" | "C" | "D" | null;
+          grupo?: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | null;
           created_at?: string;
         };
         Relationships: [];
@@ -112,8 +118,8 @@ export interface Database {
         Row: {
           id: string;
           torneio_id: string;
-          fase: "grupos" | "quartas" | "semi" | "final";
-          grupo: "A" | "B" | "C" | "D" | null;
+          fase: "grupos" | "quartas" | "semi" | "final" | "terceiro";
+          grupo: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | null;
           ordem: number;
           chave: string | null;
           perna: 1 | 2 | null;
@@ -130,8 +136,8 @@ export interface Database {
         Insert: {
           id: string;
           torneio_id: string;
-          fase: "grupos" | "quartas" | "semi" | "final";
-          grupo?: "A" | "B" | "C" | "D" | null;
+          fase: "grupos" | "quartas" | "semi" | "final" | "terceiro";
+          grupo?: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | null;
           ordem?: number;
           chave?: string | null;
           perna?: 1 | 2 | null;
@@ -148,8 +154,8 @@ export interface Database {
         Update: {
           id?: string;
           torneio_id?: string;
-          fase?: "grupos" | "quartas" | "semi" | "final";
-          grupo?: "A" | "B" | "C" | "D" | null;
+          fase?: "grupos" | "quartas" | "semi" | "final" | "terceiro";
+          grupo?: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | null;
           ordem?: number;
           chave?: string | null;
           perna?: 1 | 2 | null;
