@@ -1171,6 +1171,7 @@ function BracketPanel({
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
+  const tl = matches.filter((m) => m.fase === "terceiro");
 
   const directKO = tournament.max_jogadores <= 4;
   if (q.length === 0 && (!directKO || s.length === 0)) {
@@ -1187,12 +1188,17 @@ function BracketPanel({
   }
 
   return (
+    <div className="space-y-4">
     <div className={`grid gap-4 ${directKO ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
       {!directKO && (
         <BracketColumn title="Quartas de Final" matches={q} teams={teamMap} players={playerByTeam} tournament={tournament} allMatches={matches} />
       )}
       <BracketColumn title="Semifinal" matches={s} teams={teamMap} players={playerByTeam} placeholder="Aguardando quartas" tournament={tournament} allMatches={matches} />
       <BracketColumn title="Final" matches={f} teams={teamMap} players={playerByTeam} placeholder="Aguardando semifinal" champion tournament={tournament} allMatches={matches} />
+    </div>
+    {tl.length > 0 && (
+      <BracketColumn title="Disputa de 3º Lugar" matches={tl} teams={teamMap} players={playerByTeam} tournament={tournament} allMatches={matches} />
+    )}
     </div>
   );
 }
