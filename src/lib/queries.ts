@@ -267,14 +267,15 @@ export function useSaveMatchScore(torneio_id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
-      match, allMatches, tournament, gm, gv, pm, pv,
+      match, allMatches, tournament, teams, gm, gv, pm, pv,
     }: {
       match: MatchType;
       allMatches: MatchType[];
       tournament: TournamentType;
+      teams: TeamType[];
       gm: number; gv: number;
       pm?: number | null; pv?: number | null;
-    }) => saveMatchScore(match, allMatches, tournament, gm, gv, pm, pv),
+    }) => saveMatchScore(match, allMatches, tournament, teams, gm, gv, pm, pv),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.matches(torneio_id) }),
   });
 }
@@ -283,13 +284,14 @@ export function useLaunchWO(torneio_id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
-      match, allMatches, tournament, vencedor,
+      match, allMatches, tournament, teams, vencedor,
     }: {
       match: MatchType;
       allMatches: MatchType[];
       tournament: TournamentType;
+      teams: TeamType[];
       vencedor: "mandante" | "visitante";
-    }) => launchWO(match, allMatches, tournament, vencedor),
+    }) => launchWO(match, allMatches, tournament, teams, vencedor),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.matches(torneio_id) }),
   });
 }

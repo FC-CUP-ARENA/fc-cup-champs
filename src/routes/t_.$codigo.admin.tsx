@@ -738,12 +738,17 @@ function GroupsPanel({
   const groupMatches = matches.filter((m) => m.fase === "grupos");
   const directKO = tournament.max_jogadores <= 4;
   if (directKO) {
-    return <DirectKnockoutManager tournament={tournament} teams={teams} matches={matches} />;
+    return (
+      <Card className="border-dashed border-border bg-card/50 p-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          Torneios com 4 times começam direto no mata-mata. Use a aba Mata-Mata para sortear semifinais, definir datas e lançar placares.
+        </p>
+      </Card>
+    );
   }
   return (
     <div className="space-y-6">
       <GroupManager tournament={tournament} teams={teams} />
-      <BracketConfigManager tournament={tournament} teams={teams} matches={matches} />
       {groupMatches.length === 0 && (
         <p className="text-center text-sm text-muted-foreground">
           Nenhuma partida de grupo gerada ainda. Sorteie ou defina os grupos e clique em "Gerar partidas".
@@ -1174,21 +1179,26 @@ function BracketPanel({
   const tl = matches.filter((m) => m.fase === "terceiro");
 
   const directKO = tournament.max_jogadores <= 4;
-  if (q.length === 0 && (!directKO || s.length === 0)) {
+  if (!directKO && q.length === 0 && s.length === 0 && f.length === 0) {
     return (
       <Card className="border-dashed border-border bg-card/50 p-10 text-center">
         <AlertTriangle className="mx-auto h-6 w-6 text-muted-foreground" />
         <p className="mt-3 text-sm text-muted-foreground">
           {directKO
-            ? "Sorteie as semifinais na aba Grupos para iniciar o mata-mata."
-            : "Chave será gerada após todas as partidas da fase de grupos."}
+            ? "Sorteie as semifinais nesta aba para iniciar o mata-mata."
+            : "Configure e gere o mata-mata nesta aba. As datas podem ser definidas antes dos times serem conhecidos."}
         </p>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {directKO ? (
+        <DirectKnockoutManager tournament={tournament} teams={teams} matches={matches} />
+      ) : (
+        <BracketConfigManager tournament={tournament} teams={teams} matches={matches} />
+      )}
     <div className={`grid gap-4 ${directKO ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
       {!directKO && (
         <BracketColumn title="Quartas de Final" matches={q} teams={teamMap} players={playerByTeam} tournament={tournament} allMatches={matches} />
@@ -1284,16 +1294,19 @@ function MatchCard({ match, teams, players, tournament, allMatches }: {
   const isJogoUnico = tournament.formato_mata_mata === "jogo_unico";
   const showPens = isKO && tied && (isJogoUnico || match.perna === 2);
 
-  const mandante = teams.get(match.time_mandante_id);
-  const visitante = teams.get(match.time_visitante_id);
+  const mandante = match.time_mandante_id ? teams.get(match.time_mandante_id) : undefined;
+  const visitante = match.time_visitante_id ? teams.get(match.time_visitante_id) : undefined;
+  const hasBothTeams = !!mandante && !!visitante;
   const pa = mandante && players ? players.get(mandante.id) : undefined;
   const pVis = visitante && players ? players.get(visitante.id) : undefined;
 
   const save = () => {
+    if (!hasBothTeams) { toast.error("Defina os times antes de lançar placar"); return; }
     if (gm === "" || gv === "") { toast.error("Preencha o placar"); return; }
     saveScoreMutation.mutate(
       {
         match, allMatches, tournament,
+        teams: Array.from(teams.values()),
         gm: Number(gm), gv: Number(gv),
         pm: showPens && pm !== "" ? Number(pm) : null,
         pv: showPens && pv !== "" ? Number(pv) : null,
@@ -1325,10 +1338,10 @@ function MatchCard({ match, teams, players, tournament, allMatches }: {
                 {pa ? (
                   <GamertagWithCategory player={pa} className="truncate text-sm font-semibold" />
                 ) : (
-                  <span className="truncate text-sm font-semibold">{mandante?.nome}</span>
+                  <span className="truncate text-sm font-semibold">{mandante?.nome ?? "A definir"}</span>
                 )}
               </div>
-              <span className="truncate pl-7 text-[10px] text-muted-foreground">{mandante?.nome}</span>
+              <span className="truncate pl-7 text-[10px] text-muted-foreground">{mandante?.nome ?? "Aguardando definição"}</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center gap-1">
@@ -1352,11 +1365,11 @@ function MatchCard({ match, teams, players, tournament, allMatches }: {
                 {pVis ? (
                   <GamertagWithCategory player={pVis} className="truncate text-right text-sm font-semibold" />
                 ) : (
-                  <span className="truncate text-right text-sm font-semibold">{visitante?.nome}</span>
+                  <span className="truncate text-right text-sm font-semibold">{visitante?.nome ?? "A definir"}</span>
                 )}
                 <TeamCrest src={visitante?.escudo_url ?? ""} alt={visitante?.nome ?? ""} size={24} />
               </div>
-              <span className="truncate pr-7 text-[10px] text-muted-foreground">{visitante?.nome}</span>
+              <span className="truncate pr-7 text-[10px] text-muted-foreground">{visitante?.nome ?? "Aguardando definição"}</span>
             </div>
           </div>
 
@@ -1383,10 +1396,10 @@ function MatchCard({ match, teams, players, tournament, allMatches }: {
           </Badge>
         </div>
         <div className="flex gap-1">
-          <Button size="sm" variant="ghost" onClick={() => setWoOpen(true)} className="h-7 text-[10px] text-destructive hover:bg-destructive/10 hover:text-destructive">
+          <Button size="sm" variant="ghost" onClick={() => setWoOpen(true)} disabled={!hasBothTeams} className="h-7 text-[10px] text-destructive hover:bg-destructive/10 hover:text-destructive">
             W.O.
           </Button>
-          <Button size="sm" onClick={save} disabled={saveScoreMutation.isPending} className="h-7 bg-primary text-[10px] text-primary-foreground hover:bg-primary-glow">
+          <Button size="sm" onClick={save} disabled={!hasBothTeams || saveScoreMutation.isPending} className="h-7 bg-primary text-[10px] text-primary-foreground hover:bg-primary-glow">
             <Save className="mr-1 h-3 w-3" /> {saveScoreMutation.isPending ? "..." : "Salvar"}
           </Button>
         </div>
@@ -1401,7 +1414,7 @@ function MatchCard({ match, teams, players, tournament, allMatches }: {
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => {
               launchWOMutation.mutate(
-                { match, allMatches, tournament, vencedor: "mandante" },
+                { match, allMatches, tournament, teams: Array.from(teams.values()), vencedor: "mandante" },
                 { onSuccess: () => { toast.success("W.O. registrado"); setWoOpen(false); }, onError: (e) => toast.error(e.message) },
               );
             }}>
@@ -1416,7 +1429,7 @@ function MatchCard({ match, teams, players, tournament, allMatches }: {
             </Button>
             <Button variant="outline" onClick={() => {
               launchWOMutation.mutate(
-                { match, allMatches, tournament, vencedor: "visitante" },
+                { match, allMatches, tournament, teams: Array.from(teams.values()), vencedor: "visitante" },
                 { onSuccess: () => { toast.success("W.O. registrado"); setWoOpen(false); }, onError: (e) => toast.error(e.message) },
               );
             }}>
