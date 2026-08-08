@@ -294,7 +294,7 @@ function isTwoLegged(tournament: Tournament): boolean {
 
 function makeTie(
   tournament: Tournament,
-  fase: "quartas" | "semi" | "final",
+  fase: "quartas" | "semi" | "final" | "terceiro",
   ordem: number,
   a: string,
   b: string,
@@ -315,7 +315,64 @@ function makeTie(
     penaltis_visitante: null,
     status: "pendente",
   });
-  return isTwoLegged(tournament) ? [base(1, a, b), base(2, b, a)] : [base(1, a, b)];
+  const twoLegs = isTwoLegged(tournament) && fase !== "terceiro";
+  return twoLegs ? [base(1, a, b), base(2, b, a)] : [base(1, a, b)];
+}
+
+function loserOfTie(legs: Match[]): string | null {
+  const w = winnerOfTie(legs);
+  if (!w) return null;
+  const first = legs[0];
+  if (!first) return null;
+  return first.time_mandante_id === w ? first.time_visitante_id : first.time_mandante_id;
+}
+
+/** Configuração de chaveamento efetiva do torneio (com fallback para o padrão). */
+export function bracketConfigOf(tournament: Tournament): BracketConfig {
+  const cfg = tournament.chaveamento_config;
+  if (cfg && Array.isArray(cfg.pares) && cfg.pares.length > 0) {
+    return { pares: cfg.pares, terceiro_lugar: !!cfg.terceiro_lugar };
+  }
+  return defaultBracketConfig(tournament.num_grupos ?? 4, true);
+}
+
+/** Resolve as vagas do chaveamento em ids de times, a partir das classificações atuais. */
+export function resolveBracketSeeds(
+  tournament: Tournament,
+  matches: Match[],
+  teams?: Team[],
+): Array<{ pair: BracketPair; aId: string | null; bId: string | null }> {
+  const torneio_id = tournament.id;
+  const groupMatches = matches.filter((m) => m.torneio_id === torneio_id && m.fase === "grupos");
+  const cfg = bracketConfigOf(tournament);
+  const cache = new Map<Grupo, ReturnType<typeof computeGroupStandings>>();
+
+  const standingsOf = (g: Grupo) => {
+    if (cache.has(g)) return cache.get(g)!;
+    let stTeams: Team[] = (teams ?? []).filter((t) => t.torneio_id === torneio_id && t.grupo === g);
+    if (stTeams.length === 0) {
+      const ids = new Set<string>();
+      groupMatches.filter((m) => m.grupo === g).forEach((m) => {
+        ids.add(m.time_mandante_id);
+        ids.add(m.time_visitante_id);
+      });
+      stTeams = [...ids].map((id) => ({
+        id, torneio_id, nome: "", escudo_url: "", ativo_pelo_admin: true, ocupado: true, grupo: g,
+      }));
+    }
+    const st = computeGroupStandings(groupMatches, stTeams, torneio_id, g);
+    cache.set(g, st);
+    return st;
+  };
+
+  const resolve = (s: Seed) => standingsOf(s.grupo)[s.pos - 1]?.time_id ?? null;
+  return cfg.pares.map((pair) => ({ pair, aId: resolve(pair.a), bId: resolve(pair.b) }));
+}
+
+function firstKnockoutFase(nPares: number): "quartas" | "semi" | "final" {
+  if (nPares >= 4) return "quartas";
+  if (nPares === 2) return "semi";
+  return "final";
 }
 
 /** Calcula as partidas de avanço de chave que precisam ser inseridas no Supabase. */
@@ -331,6 +388,7 @@ export function computeBracketAdvances(
   }
 
   const newMatches: Match[] = [];
+  const cfg = bracketConfigOf(tournament);
 
   if (directKO) {
     const semis = tiesOf("semi");
@@ -339,43 +397,37 @@ export function computeBracketAdvances(
       newMatches.push(
         ...makeTie(tournament, "final", 0, winnerOfTie(semis[0])!, winnerOfTie(semis[1])!),
       );
+      if (cfg.terceiro_lugar) {
+        const l1 = loserOfTie(semis[0]);
+        const l2 = loserOfTie(semis[1]);
+        if (l1 && l2) newMatches.push(...makeTie(tournament, "terceiro", 1, l1, l2));
+      }
     }
     return newMatches;
   }
 
-  const hasQF = matches.some((m) => m.torneio_id === torneio_id && m.fase === "quartas");
+  const koStarted = matches.some((m) => m.torneio_id === torneio_id && m.fase !== "grupos");
   const groupMatches = matches.filter((m) => m.torneio_id === torneio_id && m.fase === "grupos");
   const allGroupsDone =
     groupMatches.length > 0 && groupMatches.every((m) => m.status !== "pendente");
 
-  if (!hasQF && allGroupsDone) {
-    const teams = (["A", "B", "C", "D"] as const).map((g) => {
-      const stTeams: Team[] = [];
-      const ids = new Set<string>();
-      groupMatches.filter((m) => m.grupo === g).forEach((m) => {
-        ids.add(m.time_mandante_id);
-        ids.add(m.time_visitante_id);
-      });
-      ids.forEach((id) => stTeams.push({ id, torneio_id, nome: "", escudo_url: "", ativo_pelo_admin: true, ocupado: true, grupo: g }));
-      return computeGroupStandings(groupMatches, stTeams, torneio_id, g);
+  if (!koStarted && allGroupsDone) {
+    const resolved = resolveBracketSeeds(tournament, matches);
+    const fase = firstKnockoutFase(resolved.length);
+    resolved.forEach((r, i) => {
+      if (r.aId && r.bId) newMatches.push(...makeTie(tournament, fase, i, r.aId, r.bId));
     });
-    const [A, B, C, D] = teams;
-    newMatches.push(
-      ...makeTie(tournament, "quartas", 0, A[0].time_id, B[1].time_id),
-      ...makeTie(tournament, "quartas", 1, C[0].time_id, D[1].time_id),
-      ...makeTie(tournament, "quartas", 2, B[0].time_id, A[1].time_id),
-      ...makeTie(tournament, "quartas", 3, D[0].time_id, C[1].time_id),
-    );
     return newMatches;
   }
 
   const qfTies = tiesOf("quartas");
   const hasSF = matches.some((m) => m.torneio_id === torneio_id && m.fase === "semi");
-  if (!hasSF && qfTies.length === 4 && qfTies.every((t) => winnerOfTie(t))) {
-    newMatches.push(
-      ...makeTie(tournament, "semi", 0, winnerOfTie(qfTies[0])!, winnerOfTie(qfTies[1])!),
-      ...makeTie(tournament, "semi", 1, winnerOfTie(qfTies[2])!, winnerOfTie(qfTies[3])!),
-    );
+  if (!hasSF && qfTies.length >= 2 && qfTies.every((t) => winnerOfTie(t))) {
+    for (let i = 0; i + 1 < qfTies.length; i += 2) {
+      newMatches.push(
+        ...makeTie(tournament, "semi", i / 2, winnerOfTie(qfTies[i])!, winnerOfTie(qfTies[i + 1])!),
+      );
+    }
     return newMatches;
   }
 
@@ -385,6 +437,11 @@ export function computeBracketAdvances(
     newMatches.push(
       ...makeTie(tournament, "final", 0, winnerOfTie(sfTies[0])!, winnerOfTie(sfTies[1])!),
     );
+    if (cfg.terceiro_lugar) {
+      const l1 = loserOfTie(sfTies[0]);
+      const l2 = loserOfTie(sfTies[1]);
+      if (l1 && l2) newMatches.push(...makeTie(tournament, "terceiro", 1, l1, l2));
+    }
   }
   return newMatches;
 }
