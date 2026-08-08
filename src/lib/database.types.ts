@@ -123,8 +123,8 @@ export interface Database {
           ordem: number;
           chave: string | null;
           perna: 1 | 2 | null;
-          time_mandante_id: string;
-          time_visitante_id: string;
+          time_mandante_id: string | null;
+          time_visitante_id: string | null;
           gols_mandante: number | null;
           gols_visitante: number | null;
           penaltis_mandante: number | null;
@@ -141,8 +141,8 @@ export interface Database {
           ordem?: number;
           chave?: string | null;
           perna?: 1 | 2 | null;
-          time_mandante_id: string;
-          time_visitante_id: string;
+          time_mandante_id: string | null;
+          time_visitante_id: string | null;
           gols_mandante?: number | null;
           gols_visitante?: number | null;
           penaltis_mandante?: number | null;
@@ -159,8 +159,8 @@ export interface Database {
           ordem?: number;
           chave?: string | null;
           perna?: 1 | 2 | null;
-          time_mandante_id?: string;
-          time_visitante_id?: string;
+          time_mandante_id?: string | null;
+          time_visitante_id?: string | null;
           gols_mandante?: number | null;
           gols_visitante?: number | null;
           penaltis_mandante?: number | null;

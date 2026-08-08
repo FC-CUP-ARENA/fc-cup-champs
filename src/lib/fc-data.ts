@@ -46,8 +46,8 @@ export type Match = {
   ordem: number;
   chave?: string | null;
   perna?: 1 | 2 | null;
-  time_mandante_id: string;
-  time_visitante_id: string;
+  time_mandante_id: string | null;
+  time_visitante_id: string | null;
   gols_mandante: number | null;
   gols_visitante: number | null;
   penaltis_mandante: number | null;
@@ -179,6 +179,7 @@ export function calcularCategoria(mesAno: string): CategoriaIdade | null {
 
 function winnerOf(m: Match): string | null {
   if (m.status !== "concluido" && m.status !== "wo") return null;
+  if (!m.time_mandante_id || !m.time_visitante_id) return null;
   const gm = m.gols_mandante ?? 0;
   const gv = m.gols_visitante ?? 0;
   if (gm > gv) return m.time_mandante_id;
@@ -201,6 +202,7 @@ function winnerOfTie(legs: Match[]): string | null {
   const ordered = [...legs].sort((a, b) => (a.perna ?? 1) - (b.perna ?? 1));
   const teamA = ordered[0].time_mandante_id;
   const teamB = ordered[0].time_visitante_id;
+  if (!teamA || !teamB) return null;
   let ga = 0; let gb = 0;
   ordered.forEach((m) => {
     const gm = m.gols_mandante ?? 0;
@@ -248,8 +250,8 @@ export function computeGroupStandings(
     .filter((t) => t.torneio_id === torneio_id && t.grupo === grupo && t.ocupado)
     .forEach((t) => teamIds.add(t.id));
   groupMatches.forEach((m) => {
-    teamIds.add(m.time_mandante_id);
-    teamIds.add(m.time_visitante_id);
+    if (m.time_mandante_id) teamIds.add(m.time_mandante_id);
+    if (m.time_visitante_id) teamIds.add(m.time_visitante_id);
   });
   const table = new Map<string, Standing>();
   teamIds.forEach((id) =>
@@ -259,6 +261,7 @@ export function computeGroupStandings(
     if (m.status === "pendente") return;
     const gm = m.gols_mandante ?? 0;
     const gv = m.gols_visitante ?? 0;
+    if (!m.time_mandante_id || !m.time_visitante_id) return;
     const a = table.get(m.time_mandante_id)!;
     const b = table.get(m.time_visitante_id)!;
     a.J++; b.J++;
@@ -296,11 +299,11 @@ function makeTie(
   tournament: Tournament,
   fase: "quartas" | "semi" | "final" | "terceiro",
   ordem: number,
-  a: string,
-  b: string,
+  a: string | null,
+  b: string | null,
 ): Match[] {
   const chave = `${fase}-${ordem}`;
-  const base = (perna: 1 | 2, mandante: string, visitante: string): Match => ({
+  const base = (perna: 1 | 2, mandante: string | null, visitante: string | null): Match => ({
     id: `m-${chave}-p${perna}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     torneio_id: tournament.id,
     fase,
@@ -323,7 +326,7 @@ function loserOfTie(legs: Match[]): string | null {
   const w = winnerOfTie(legs);
   if (!w) return null;
   const first = legs[0];
-  if (!first) return null;
+  if (!first || !first.time_mandante_id || !first.time_visitante_id) return null;
   return first.time_mandante_id === w ? first.time_visitante_id : first.time_mandante_id;
 }
 
@@ -353,8 +356,8 @@ export function resolveBracketSeeds(
     if (stTeams.length === 0) {
       const ids = new Set<string>();
       groupMatches.filter((m) => m.grupo === g).forEach((m) => {
-        ids.add(m.time_mandante_id);
-        ids.add(m.time_visitante_id);
+        if (m.time_mandante_id) ids.add(m.time_mandante_id);
+        if (m.time_visitante_id) ids.add(m.time_visitante_id);
       });
       stTeams = [...ids].map((id) => ({
         id, torneio_id, nome: "", escudo_url: "", ativo_pelo_admin: true, ocupado: true, grupo: g,
@@ -600,14 +603,23 @@ export async function generateKnockoutFromGroups(
   teams: Team[],
 ): Promise<{ ok: boolean; error?: string }> {
   const resolved = resolveBracketSeeds(tournament, matches, teams);
-  const pending = resolved.filter((r) => !r.aId || !r.bId);
   if (resolved.length === 0) return { ok: false, error: "Chaveamento não configurado." };
-  if (pending.length > 0)
-    return { ok: false, error: "Ainda não há classificação suficiente nos grupos para definir todos os confrontos." };
 
-  const fase = firstKnockoutFase(resolved.length);
+  const firstFase = firstKnockoutFase(resolved.length);
   const novos: Match[] = [];
-  resolved.forEach((r, i) => novos.push(...makeTie(tournament, fase, i, r.aId!, r.bId!)));
+  resolved.forEach((r, i) => novos.push(...makeTie(tournament, firstFase, i, r.aId, r.bId)));
+
+  if (firstFase === "quartas") {
+    for (let i = 0; i < Math.ceil(resolved.length / 2); i++) {
+      novos.push(...makeTie(tournament, "semi", i, null, null));
+    }
+  }
+  if (firstFase !== "final") {
+    novos.push(...makeTie(tournament, "final", 0, null, null));
+    if (bracketConfigOf(tournament).terceiro_lugar) {
+      novos.push(...makeTie(tournament, "terceiro", 1, null, null));
+    }
+  }
 
   await supabase
     .from("matches")
@@ -747,10 +759,79 @@ export async function fillWithBots(
 // Supabase — Match mutations
 // ============================================================
 
+
+async function refreshKnockoutPlaceholders(
+  tournament: Tournament,
+  matches: Match[],
+  teams: Team[] = [],
+): Promise<void> {
+  const koMatches = matches.filter((m) => m.torneio_id === tournament.id && m.fase !== "grupos");
+  if (koMatches.length === 0) return;
+
+  const updates: Array<Promise<unknown>> = [];
+  const firstFase = koMatches.some((m) => m.fase === "quartas")
+    ? "quartas"
+    : koMatches.some((m) => m.fase === "semi")
+      ? "semi"
+      : "final";
+
+  if (!isDirectKnockout(tournament.max_jogadores)) {
+    const resolved = resolveBracketSeeds(tournament, matches, teams);
+    getPhaseTies(koMatches, firstFase).forEach((tie, i) => {
+      const r = resolved[i];
+      if (!r) return;
+      tie.forEach((m) => {
+        const home = m.perna === 2 ? r.bId : r.aId;
+        const away = m.perna === 2 ? r.aId : r.bId;
+        if (home !== m.time_mandante_id || away !== m.time_visitante_id) {
+          updates.push(supabase.from("matches").update({ time_mandante_id: home, time_visitante_id: away }).eq("id", m.id));
+        }
+      });
+    });
+  }
+
+  const sourceTies = firstFase === "quartas" ? getPhaseTies(matches, "quartas") : [];
+  if (sourceTies.length >= 2) {
+    getPhaseTies(koMatches, "semi").forEach((tie, i) => {
+      const a = winnerOfTie(sourceTies[i * 2]);
+      const b = winnerOfTie(sourceTies[i * 2 + 1]);
+      tie.forEach((m) => {
+        const home = m.perna === 2 ? b : a;
+        const away = m.perna === 2 ? a : b;
+        if (home !== m.time_mandante_id || away !== m.time_visitante_id) {
+          updates.push(supabase.from("matches").update({ time_mandante_id: home, time_visitante_id: away }).eq("id", m.id));
+        }
+      });
+    });
+  }
+
+  const sfTies = getPhaseTies(matches, "semi");
+  if (sfTies.length === 2) {
+    const finalists = [winnerOfTie(sfTies[0]), winnerOfTie(sfTies[1])];
+    getPhaseTies(koMatches, "final").forEach((tie) => tie.forEach((m) => {
+      const home = m.perna === 2 ? finalists[1] : finalists[0];
+      const away = m.perna === 2 ? finalists[0] : finalists[1];
+      if (home !== m.time_mandante_id || away !== m.time_visitante_id) {
+        updates.push(supabase.from("matches").update({ time_mandante_id: home, time_visitante_id: away }).eq("id", m.id));
+      }
+    }));
+
+    const third = [loserOfTie(sfTies[0]), loserOfTie(sfTies[1])];
+    getPhaseTies(koMatches, "terceiro").forEach((tie) => tie.forEach((m) => {
+      if (third[0] !== m.time_mandante_id || third[1] !== m.time_visitante_id) {
+        updates.push(supabase.from("matches").update({ time_mandante_id: third[0], time_visitante_id: third[1] }).eq("id", m.id));
+      }
+    }));
+  }
+
+  await Promise.all(updates);
+}
+
 export async function saveMatchScore(
   match: Match,
   allMatches: Match[],
   tournament: Tournament,
+  teams: Team[],
   gm: number,
   gv: number,
   pm?: number | null,
@@ -797,6 +878,7 @@ export async function saveMatchScore(
           status: "concluido" as const }
       : m,
   );
+  await refreshKnockoutPlaceholders(tournament, updatedMatches, teams);
   const advances = computeBracketAdvances(tournament, updatedMatches);
   if (advances.length > 0) {
     await supabase.from("matches").insert(advances);
@@ -809,6 +891,7 @@ export async function launchWO(
   match: Match,
   allMatches: Match[],
   tournament: Tournament,
+  teams: Team[],
   vencedor: "mandante" | "visitante",
 ): Promise<{ ok: boolean; error?: string }> {
   const gm = vencedor === "mandante" ? 3 : 0;
@@ -830,6 +913,7 @@ export async function launchWO(
           penaltis_mandante: null, penaltis_visitante: null, status: "wo" as const }
       : m,
   );
+  await refreshKnockoutPlaceholders(tournament, updatedMatches, teams);
   const advances = computeBracketAdvances(tournament, updatedMatches);
   if (advances.length > 0) {
     await supabase.from("matches").insert(advances);
@@ -941,7 +1025,11 @@ export async function drawDirectKnockout(
   const semis: Match[] = [
     ...makeTie(tournament, "semi", 0, shuffled[0].id, shuffled[3].id),
     ...makeTie(tournament, "semi", 1, shuffled[1].id, shuffled[2].id),
+    ...makeTie(tournament, "final", 0, null, null),
   ];
+  if (bracketConfigOf(tournament).terceiro_lugar) {
+    semis.push(...makeTie(tournament, "terceiro", 1, null, null));
+  }
 
   // Clear groups on teams
   await supabase.from("teams").update({ grupo: null }).eq("torneio_id", tournament.id);
