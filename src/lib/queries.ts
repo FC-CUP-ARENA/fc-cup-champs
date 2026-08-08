@@ -149,6 +149,10 @@ import {
   clearGroups,
   generateGroupMatches,
   addTeams,
+  setNumGrupos,
+  setBracketConfig,
+  generateKnockoutFromGroups,
+  type BracketConfig,
   type Tournament as TournamentType,
   type Team as TeamType,
   type Match as MatchType,
@@ -352,5 +356,36 @@ export function useAddTeams(torneio_id: string) {
       qc.invalidateQueries({ queryKey: qk.teams(torneio_id) });
       qc.invalidateQueries({ queryKey: qk.tournament(torneio_id) });
     },
+  });
+}
+
+export function useSetNumGrupos(torneio_id: string, codigo: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (num_grupos: number) => setNumGrupos(torneio_id, num_grupos),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.tournamentByCode(codigo) });
+      qc.invalidateQueries({ queryKey: qk.tournaments() });
+    },
+  });
+}
+
+export function useSetBracketConfig(torneio_id: string, codigo: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (config: BracketConfig) => setBracketConfig(torneio_id, config),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.tournamentByCode(codigo) });
+      qc.invalidateQueries({ queryKey: qk.tournaments() });
+    },
+  });
+}
+
+export function useGenerateKnockout(torneio_id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tournament, matches, teams }: { tournament: TournamentType; matches: MatchType[]; teams: TeamType[] }) =>
+      generateKnockoutFromGroups(tournament, matches, teams),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.matches(torneio_id) }),
   });
 }
