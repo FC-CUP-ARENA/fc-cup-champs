@@ -349,7 +349,7 @@ function PublicGroups({ tournament, teams, players: playersProp }: { tournament:
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {GRUPOS.map((g) => {
+      {groupsOf(tournament).map((g) => {
         const standings = computeGroupStandings(groupMatches, teams, tournament.id, g);
         if (standings.length === 0) return null;
         const gm = matches.filter((m) => m.grupo === g).sort((a, b) => a.ordem - b.ordem);
