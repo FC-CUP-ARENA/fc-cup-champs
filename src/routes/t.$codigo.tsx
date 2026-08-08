@@ -474,6 +474,18 @@ function PublicBracket({ tournament, teams, players: playersProp }: { tournament
           </div>
         ))}
       </div>
+      {tl.length > 0 && (
+        <div>
+          <h3 className="mb-2 font-display text-sm font-bold uppercase tracking-widest text-primary">
+            Disputa de 3º Lugar
+          </h3>
+          <div className="space-y-2">
+            {tl.map((m) => (
+              <ScoreRow key={m.id} match={m} teams={teamMap} players={playerByTeam} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
