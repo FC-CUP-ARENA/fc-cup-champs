@@ -30,7 +30,7 @@ import {
   getTieWinner,
   formatMatchDate,
   isRegistrationOpen,
-  GRUPOS,
+  groupsOf,
   type Team,
   type Tournament,
   type Match,
