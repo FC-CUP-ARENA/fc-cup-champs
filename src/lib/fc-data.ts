@@ -589,7 +589,7 @@ export async function setNumGrupos(id: string, num_grupos: number): Promise<void
 export async function setBracketConfig(id: string, config: BracketConfig): Promise<void> {
   await supabase
     .from("tournaments")
-    .update({ chaveamento_config: config as unknown as Json })
+    .update({ chaveamento_config: config as unknown as never })
     .eq("id", id);
 }
 
