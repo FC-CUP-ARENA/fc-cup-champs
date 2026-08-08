@@ -732,13 +732,14 @@ function GroupsPanel({
   return (
     <div className="space-y-6">
       <GroupManager tournament={tournament} teams={teams} />
+      <BracketConfigManager tournament={tournament} teams={teams} matches={matches} />
       {groupMatches.length === 0 && (
         <p className="text-center text-sm text-muted-foreground">
           Nenhuma partida de grupo gerada ainda. Sorteie ou defina os grupos e clique em "Gerar partidas".
         </p>
       )}
       <div className="grid gap-6 lg:grid-cols-2">
-      {(["A", "B", "C", "D"] as const).map((g) => {
+      {groupsOf(tournament).map((g) => {
         const standings = computeGroupStandings(groupMatches, teams, tournament.id, g);
         const gm = groupMatches.filter((m) => m.grupo === g).sort((a, b) => a.ordem - b.ordem);
         if (standings.length === 0) return null;
