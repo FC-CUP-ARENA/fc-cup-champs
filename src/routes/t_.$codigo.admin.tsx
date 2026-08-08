@@ -894,6 +894,9 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
   const generateMatchesMutation = useGenerateGroupMatches(tournament.id);
   const clearMutation = useClearGroups(tournament.id);
   const setGroupMutation = useSetTeamGroup(tournament.id);
+  const setNumGruposMutation = useSetNumGrupos(tournament.id, tournament.codigo_unico);
+  const setBracketMutation = useSetBracketConfig(tournament.id, tournament.codigo_unico);
+  const grupos = groupsOf(tournament);
 
   return (
     <Card className="border-border bg-card p-5">
@@ -947,6 +950,34 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
       <p className="mb-3 text-xs text-muted-foreground">
         Gerar partidas recria a fase de grupos e apaga placares e o mata-mata atual.
       </p>
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-background/40 p-3">
+        <Label className="text-xs">Quantidade de grupos</Label>
+        <Select
+          value={String(grupos.length)}
+          onValueChange={(v) => {
+            const n = Number(v);
+            setNumGruposMutation.mutate(n, {
+              onSuccess: () => {
+                setBracketMutation.mutate(
+                  defaultBracketConfig(n, bracketConfigOf(tournament).terceiro_lugar),
+                );
+                toast.success(`Torneio com ${n} grupo(s)`);
+              },
+              onError: (e) => toast.error(e.message),
+            });
+          }}
+        >
+          <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+              <SelectItem key={n} value={String(n)}>{n} grupo{n > 1 ? "s" : ""}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-[11px] text-muted-foreground">
+          Grupos: {grupos.join(", ")}
+        </span>
+      </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {inscritos.map((t) => {
           const p = playerByTeam.get(t.id);
@@ -973,7 +1004,7 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
               <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Sem grupo</SelectItem>
-                {GRUPOS.map((g) => (
+                {grupos.map((g) => (
                   <SelectItem key={g} value={g}>Grupo {g}</SelectItem>
                 ))}
               </SelectContent>
@@ -982,6 +1013,150 @@ function GroupManager({ tournament, teams }: { tournament: Tournament; teams: Te
           );
         })}
       </div>
+    </Card>
+  );
+}
+
+/* ---- Chaveamento (mapeamento grupo x posição) ---- */
+function BracketConfigManager({
+  tournament, teams, matches,
+}: { tournament: Tournament; teams: Team[]; matches: Match[] }) {
+  const grupos = groupsOf(tournament);
+  const saved = bracketConfigOf(tournament);
+  const [config, setConfig] = useState<BracketConfig>(saved);
+  const savedKey = JSON.stringify(saved);
+  useEffect(() => { setConfig(JSON.parse(savedKey) as BracketConfig); }, [savedKey]);
+
+  const setBracketMutation = useSetBracketConfig(tournament.id, tournament.codigo_unico);
+  const generateKO = useGenerateKnockout(tournament.id);
+
+  const seedOptions: Seed[] = useMemo(
+    () => grupos.flatMap((g) => [1, 2].map((pos) => ({ grupo: g, pos }))),
+    [grupos.join(",")],
+  );
+
+  const resolved = useMemo(
+    () => resolveBracketSeeds({ ...tournament, chaveamento_config: config }, matches, teams),
+    [tournament, config, matches, teams],
+  );
+  const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+
+  const updateSeed = (idx: number, side: "a" | "b", value: string) => {
+    const [grupo, pos] = value.split("-");
+    const pares = config.pares.map((p, i) =>
+      i === idx ? { ...p, [side]: { grupo: grupo as Seed["grupo"], pos: Number(pos) } } : p,
+    );
+    setConfig({ ...config, pares });
+  };
+
+  const save = (next: BracketConfig) => {
+    setConfig(next);
+    setBracketMutation.mutate(next, {
+      onSuccess: () => toast.success("Chaveamento salvo"),
+      onError: (e) => toast.error(e.message),
+    });
+  };
+
+  return (
+    <Card className="border-border bg-card p-5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-display text-sm font-bold uppercase tracking-widest text-primary">
+          Chaveamento do Mata-Mata
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={() => save(randomizeBracketConfig(config))}>
+            <Shuffle className="mr-1 h-3.5 w-3.5" /> Sortear confrontos
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => save(defaultBracketConfig(grupos.length, config.terceiro_lugar))}
+          >
+            <RefreshCw className="mr-1 h-3.5 w-3.5" /> Padrão cruzado
+          </Button>
+          <Button
+            size="sm"
+            disabled={setBracketMutation.isPending}
+            onClick={() => save(config)}
+            className="bg-primary text-primary-foreground hover:bg-primary-glow"
+          >
+            <Save className="mr-1 h-3.5 w-3.5" /> Salvar
+          </Button>
+        </div>
+      </div>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Defina agora quem enfrenta quem no mata-mata (ex.: 1º do Grupo A x 2º do Grupo B), mesmo antes do
+        sorteio dos times ou do fim dos jogos. Ao encerrar a fase de grupos, os confrontos são criados
+        automaticamente com esse mapeamento.
+      </p>
+
+      <div className="mb-4 flex items-center justify-between rounded-lg border border-border bg-background/40 p-3">
+        <div>
+          <p className="text-sm font-semibold">Disputa de 3º lugar</p>
+          <p className="text-[11px] text-muted-foreground">Cria um jogo entre os perdedores das semifinais.</p>
+        </div>
+        <Switch
+          checked={config.terceiro_lugar}
+          onCheckedChange={(v) => save({ ...config, terceiro_lugar: v })}
+        />
+      </div>
+
+      <div className="space-y-2">
+        {config.pares.map((pair, idx) => {
+          const r = resolved[idx];
+          const aTeam = r?.aId ? teamMap.get(r.aId) : undefined;
+          const bTeam = r?.bId ? teamMap.get(r.bId) : undefined;
+          return (
+            <div key={idx} className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background/40 p-2.5">
+              <span className="w-16 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Chave {idx + 1}
+              </span>
+              {(["a", "b"] as const).map((side) => (
+                <div key={side} className="flex items-center gap-2">
+                  {side === "b" && <span className="text-xs font-bold text-muted-foreground">x</span>}
+                  <div className="flex flex-col">
+                    <Select
+                      value={`${pair[side].grupo}-${pair[side].pos}`}
+                      onValueChange={(v) => updateSeed(idx, side, v)}
+                    >
+                      <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {seedOptions.map((s) => (
+                          <SelectItem key={`${s.grupo}-${s.pos}`} value={`${s.grupo}-${s.pos}`}>
+                            {seedLabel(s)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="mt-0.5 max-w-32 truncate text-[10px] text-muted-foreground">
+                      {(side === "a" ? aTeam : bTeam)?.nome ?? "a definir"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      <Button
+        size="sm"
+        variant="outline"
+        className="mt-4"
+        disabled={generateKO.isPending}
+        onClick={() => generateKO.mutate(
+          { tournament: { ...tournament, chaveamento_config: config }, matches, teams },
+          {
+            onSuccess: (res) => {
+              if (!res.ok) toast.error(res.error || "Erro");
+              else toast.success("Mata-mata gerado");
+            },
+            onError: (e) => toast.error(e.message),
+          },
+        )}
+      >
+        <Trophy className="mr-1 h-3.5 w-3.5" /> Gerar mata-mata agora
+      </Button>
     </Card>
   );
 }
