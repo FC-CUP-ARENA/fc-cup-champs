@@ -420,6 +420,7 @@ function PublicBracket({ tournament, teams, players: playersProp }: { tournament
   const q = matches.filter((m) => m.fase === "quartas").sort((a, b) => a.ordem - b.ordem);
   const s = matches.filter((m) => m.fase === "semi").sort((a, b) => a.ordem - b.ordem);
   const f = matches.filter((m) => m.fase === "final");
+  const tl = matches.filter((m) => m.fase === "terceiro").sort((a, b) => a.ordem - b.ordem);
   const directKO = tournament.max_jogadores <= 4;
 
   if (q.length === 0 && (!directKO || s.length === 0)) {
