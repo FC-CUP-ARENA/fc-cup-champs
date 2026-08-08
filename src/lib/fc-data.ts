@@ -14,6 +14,8 @@ export type Tournament = {
   formato_mata_mata: "jogo_unico" | "ida_e_volta";
   status: "inscricoes_abertas" | "em_andamento" | "finalizado";
   data_limite_inscricoes?: string | null;
+  num_grupos?: number | null;
+  chaveamento_config?: BracketConfig | null;
 };
 
 export type Team = {
@@ -23,7 +25,7 @@ export type Team = {
   escudo_url: string;
   ativo_pelo_admin: boolean;
   ocupado: boolean;
-  grupo?: "A" | "B" | "C" | "D" | null;
+  grupo?: Grupo | null;
 };
 
 export type Player = {
@@ -39,8 +41,8 @@ export type Player = {
 export type Match = {
   id: string;
   torneio_id: string;
-  fase: "grupos" | "quartas" | "semi" | "final";
-  grupo?: "A" | "B" | "C" | "D" | null;
+  fase: "grupos" | "quartas" | "semi" | "final" | "terceiro";
+  grupo?: Grupo | null;
   ordem: number;
   chave?: string | null;
   perna?: 1 | 2 | null;
@@ -60,8 +62,73 @@ export type Standing = {
   GP: number; GC: number; SG: number;
 };
 
-export const GRUPOS = ["A", "B", "C", "D"] as const;
+export const GRUPOS = ["A", "B", "C", "D", "E", "F", "G", "H"] as const;
 export type Grupo = (typeof GRUPOS)[number];
+
+/** Uma vaga do chaveamento: posição `pos` (1 = 1º colocado) do grupo `grupo`. */
+export type Seed = { grupo: Grupo; pos: number };
+export type BracketPair = { a: Seed; b: Seed };
+export type BracketConfig = {
+  pares: BracketPair[];
+  terceiro_lugar: boolean;
+};
+
+/** Grupos efetivamente usados pelo torneio. */
+export function groupsOf(tournament: Pick<Tournament, "num_grupos">): Grupo[] {
+  const n = Math.min(Math.max(tournament.num_grupos ?? 4, 1), GRUPOS.length);
+  return GRUPOS.slice(0, n) as Grupo[];
+}
+
+/** Chaveamento padrão: 1º de um grupo x 2º do grupo seguinte (cruzado). */
+export function defaultBracketConfig(
+  numGrupos: number,
+  terceiro_lugar = true,
+): BracketConfig {
+  const gs = GRUPOS.slice(0, Math.min(Math.max(numGrupos, 1), GRUPOS.length)) as Grupo[];
+  const pares: BracketPair[] = [];
+  if (gs.length === 1) {
+    pares.push({ a: { grupo: gs[0], pos: 1 }, b: { grupo: gs[0], pos: 2 } });
+  } else {
+    for (let i = 0; i < gs.length; i++) {
+      const other = gs[(i + 1) % gs.length];
+      pares.push({ a: { grupo: gs[i], pos: 1 }, b: { grupo: other, pos: 2 } });
+    }
+  }
+  return { pares, terceiro_lugar };
+}
+
+/** Embaralha os confrontos mantendo as mesmas vagas (1º nunca enfrenta o 2º do próprio grupo quando possível). */
+export function randomizeBracketConfig(config: BracketConfig): BracketConfig {
+  const seeds: Seed[] = config.pares.flatMap((p) => [p.a, p.b]);
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const pool = [...seeds].sort(() => Math.random() - 0.5);
+    const pares: BracketPair[] = [];
+    let ok = true;
+    for (let i = 0; i < pool.length; i += 2) {
+      const a = pool[i];
+      const b = pool[i + 1];
+      if (!b) { ok = false; break; }
+      if (a.grupo === b.grupo) { ok = false; break; }
+      pares.push({ a, b });
+    }
+    if (ok) return { ...config, pares };
+  }
+  return config;
+}
+
+export function seedLabel(s: Seed): string {
+  return `${s.pos}º ${s.grupo}`;
+}
+
+export function faseLabel(fase: Match["fase"]): string {
+  switch (fase) {
+    case "grupos": return "Fase de Grupos";
+    case "quartas": return "Quartas de Final";
+    case "semi": return "Semifinal";
+    case "final": return "Final";
+    case "terceiro": return "Disputa de 3º Lugar";
+  }
+}
 
 
 // ============================================================
