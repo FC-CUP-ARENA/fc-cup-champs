@@ -860,7 +860,8 @@ export async function drawGroups(
   );
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const assign = new Map<string, Grupo>();
-  shuffled.forEach((t, i) => assign.set(t.id, GRUPOS[i % 4]));
+  const gs = groupsOf(tournament);
+  shuffled.forEach((t, i) => assign.set(t.id, gs[i % gs.length]));
 
   for (const [teamId, grupo] of assign.entries()) {
     await supabase.from("teams").update({ grupo }).eq("id", teamId);
@@ -891,7 +892,7 @@ export async function generateGroupMatches(
   let ordem = 0;
   let total = 0;
 
-  GRUPOS.forEach((g) => {
+  groupsOf(tournament).forEach((g) => {
     const ids = teams
       .filter((t) => t.torneio_id === torneio_id && t.grupo === g && t.ocupado)
       .map((t) => t.id);
